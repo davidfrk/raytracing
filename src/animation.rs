@@ -11,8 +11,9 @@ use crate::render;
 use crate::scene::materials;
 use materials::Material;
 
-extern crate nalgebra as na;
-use na::Vector3;
+//extern crate nalgebra as na;
+//use na::Vector3;
+use crate::vector3::Vector3;
 
 pub fn render_blur_transition(window:&Window, scene:&mut Scene, frames:u32, focus_dist_start:f64, focus_dist_end:f64, focus_blur_start:f64, focus_blur_end:f64){
 	for i in 0..frames{

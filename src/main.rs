@@ -5,6 +5,7 @@ mod scene;
 mod render;
 mod intersection;
 mod animation;
+mod vector3;
 
 use std::time::{Instant};
 

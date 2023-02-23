@@ -1,6 +1,7 @@
 #![allow(dead_code, unused_variables)]
 extern crate nalgebra as na;
-use na::Vector3;
+//use na::Vector3;
+use crate::vector3::Vector3;
 
 use rand::Rng;
 use crate::intersection::HitData;
@@ -17,36 +18,36 @@ pub enum Material {
 
 #[derive(Copy, Clone)]
 pub struct Emission{
-        pub color:Vector3<f64>,
-        pub emission:Vector3<f64>,
+        pub color:Vector3,
+        pub emission:Vector3,
 }
 
 #[derive(Copy, Clone)]
 pub struct Diffuse{
-        pub color:Vector3<f64>,
+        pub color:Vector3,
 }
 
 #[derive(Copy, Clone)]
 pub struct Metal{
-        pub color:Vector3<f64>,
+        pub color:Vector3,
         pub fuzz:f64,
 }
 
 #[derive(Copy, Clone)]
 pub struct Glass{
-        pub color:Vector3<f64>,
+        pub color:Vector3,
         pub refraction:f64,
 }
 
 #[derive(Copy, Clone)]
 pub struct Portal{
-        pub color:Vector3<f64>,
-        pub position:Vector3<f64>,
-        pub target:Vector3<f64>,
+        pub color:Vector3,
+        pub position:Vector3,
+        pub target:Vector3,
 }
 
 impl Material{
-        pub fn attenuation(&self) -> Vector3<f64>{
+        pub fn attenuation(&self) -> Vector3{
                 match *self{
                         Material::Emission(ref m) => {
                                 return m.color; //Vector3::new(0.0, 0.0, 0.0);
@@ -66,7 +67,7 @@ impl Material{
                 }
         }
 
-        pub fn scatter(&self, dir_in:&Vector3<f64>, hit_data:&HitData, out:&mut Ray) -> bool{
+        pub fn scatter(&self, dir_in:&Vector3, hit_data:&HitData, out:&mut Ray) -> bool{
                 match *self{
                         Material::Emission(ref m) => {
                                 return m.scatter(dir_in, hit_data, out);
@@ -88,54 +89,54 @@ impl Material{
 }
 
 pub trait Scatterable{
-        fn attenuation(&self) -> Vector3<f64>;
-        fn scatter(&self, dir_in:&Vector3<f64>, hit_data:&HitData, ray:&mut Ray) -> bool;
+        fn attenuation(&self) -> Vector3;
+        fn scatter(&self, dir_in:&Vector3, hit_data:&HitData, ray:&mut Ray) -> bool;
 }
 
 impl Emission{
-        pub fn create(color:Vector3<f64>, emission: Vector3<f64>) -> Material{
+        pub fn create(color:Vector3, emission: Vector3) -> Material{
                 Material::Emission(Emission{
                         color,
                         emission,
                 })
         }
 
-        pub fn scatter(&self, dir_in:&Vector3<f64>, hit_data:&HitData, out:&mut Ray) -> bool{
+        pub fn scatter(&self, dir_in:&Vector3, hit_data:&HitData, out:&mut Ray) -> bool{
                 return scatter_diffuse(dir_in, hit_data, &mut out.direction);
         }
 }
 
 impl Scatterable for Emission{
-        fn attenuation(&self) -> Vector3<f64>{
+        fn attenuation(&self) -> Vector3{
                 return self.color;
         }
 
-        fn scatter(&self, dir_in:&Vector3<f64>, hit_data:&HitData, out:&mut Ray) -> bool{
+        fn scatter(&self, dir_in:&Vector3, hit_data:&HitData, out:&mut Ray) -> bool{
                 return scatter_diffuse(dir_in, hit_data, &mut out.direction);
         }
 }
 
 impl Diffuse{
-        pub fn create(color:Vector3<f64>) -> Material{
+        pub fn create(color:Vector3) -> Material{
                 Material::Diffuse(Diffuse{
                         color,
                 })
         }
 
-        pub fn scatter(&self, dir_in:&Vector3<f64>, hit_data:&HitData, out:&mut Ray) -> bool{
+        pub fn scatter(&self, dir_in:&Vector3, hit_data:&HitData, out:&mut Ray) -> bool{
                 return scatter_diffuse(dir_in, hit_data, &mut out.direction);
         }
 }
 
 impl Metal{
-        pub fn create(color:Vector3<f64>, fuzz:f64) -> Material{
+        pub fn create(color:Vector3, fuzz:f64) -> Material{
                 Material::Metal(Metal{
                         color,
                         fuzz,
                 })
         }
 
-        pub fn scatter(&self, dir_in:&Vector3<f64>, hit_data:&HitData, out:&mut Ray) -> bool{
+        pub fn scatter(&self, dir_in:&Vector3, hit_data:&HitData, out:&mut Ray) -> bool{
                 return scatter_metal(dir_in, hit_data, self.fuzz, &mut out.direction);
         }
 
@@ -145,20 +146,20 @@ impl Metal{
 }
 
 impl Glass{
-        pub fn create(color:Vector3<f64>, refraction:f64) -> Material{
+        pub fn create(color:Vector3, refraction:f64) -> Material{
                 Material::Glass(Glass{
                         color,
                         refraction,
                 })
         }
 
-        pub fn scatter(&self, dir_in:&Vector3<f64>, hit_data:&HitData, out:&mut Ray) -> bool{
+        pub fn scatter(&self, dir_in:&Vector3, hit_data:&HitData, out:&mut Ray) -> bool{
                 return scatter_glass(dir_in, hit_data, self.refraction, &mut out.direction);
         }
 }
 
 impl Portal{
-        pub fn create(color:Vector3<f64>, position:Vector3<f64>, target:Vector3<f64>) -> Material{
+        pub fn create(color:Vector3, position:Vector3, target:Vector3) -> Material{
                 Material::Portal(Portal{
                         color,
                         position,
@@ -166,7 +167,7 @@ impl Portal{
                 })
         }
 
-        pub fn scatter(&self, dir_in:&Vector3<f64>, hit_data:&HitData, out:&mut Ray) -> bool{
+        pub fn scatter(&self, dir_in:&Vector3, hit_data:&HitData, out:&mut Ray) -> bool{
                 //Creating portal border
                 if dir_in.dot(&hit_data.norm).abs() < 0.1{
                         return false;
@@ -183,8 +184,8 @@ impl Portal{
         }
 }
 
-fn scatter_diffuse(dir_in:&Vector3<f64>, hit_data:&HitData, out:&mut Vector3<f64>) -> bool{
-        let effective_norm:Vector3<f64>;
+fn scatter_diffuse(dir_in:&Vector3, hit_data:&HitData, out:&mut Vector3) -> bool{
+        let effective_norm:Vector3;
 
         if hit_data.inside{
                 //Inside of object
@@ -199,8 +200,8 @@ fn scatter_diffuse(dir_in:&Vector3<f64>, hit_data:&HitData, out:&mut Vector3<f64
         return true;
 }
 
-fn scatter_metal(dir_in:&Vector3<f64>, hit_data:&HitData, fuzz:f64, out:&mut Vector3<f64>) -> bool{
-        let effective_norm:Vector3<f64>;
+fn scatter_metal(dir_in:&Vector3, hit_data:&HitData, fuzz:f64, out:&mut Vector3) -> bool{
+        let effective_norm:Vector3;
 
         if hit_data.inside{
                 //Inside of object
@@ -220,8 +221,8 @@ fn scatter_metal(dir_in:&Vector3<f64>, hit_data:&HitData, fuzz:f64, out:&mut Vec
         return false;
 }
 
-fn scatter_glass(dir_in:&Vector3<f64>, hit_data:&HitData, refraction:f64, out:&mut Vector3<f64>) -> bool{
-        let effective_norm:Vector3<f64>;
+fn scatter_glass(dir_in:&Vector3, hit_data:&HitData, refraction:f64, out:&mut Vector3) -> bool{
+        let effective_norm:Vector3;
         let r:f64;
 
         if hit_data.inside{
@@ -237,7 +238,7 @@ fn scatter_glass(dir_in:&Vector3<f64>, hit_data:&HitData, refraction:f64, out:&m
         return true;
 }
 
-fn refract(dir_in:&Vector3<f64>, norm:&Vector3<f64>, refraction_relation:f64) -> Vector3<f64>{
+fn refract(dir_in:&Vector3, norm:&Vector3, refraction_relation:f64) -> Vector3{
         /*
         let cos = dir_in.dot(norm);
         let out_perpendicular = refraction_relation * (dir_in + cos.abs()*norm);
@@ -255,7 +256,7 @@ fn refract(dir_in:&Vector3<f64>, norm:&Vector3<f64>, refraction_relation:f64) ->
         }
 
         let cos_theta_2 = (1.0 - sin_theta_2*sin_theta_2).sqrt();
-        let out_perpendicular = sin_theta_2 * (dir_in + cos_theta.abs()*norm).normalize();
+        let out_perpendicular = sin_theta_2 * (dir_in + (cos_theta.abs()*norm)).normalize();
         let out_parallel = -cos_theta_2 * norm;
         return (out_parallel + out_perpendicular).normalize();
 }
@@ -273,7 +274,7 @@ fn reflectance2(cosine: f64, ref_idx: f64) -> f64 {
         r0 + (1.0-r0)*((1.0-cosine).powi(5))
 }
 
-fn random_in_unit_sphere() -> Vector3<f64>{
+fn random_in_unit_sphere() -> Vector3{
     let mut rng = rand::thread_rng();
     loop{
             let p = Vector3::new(rng.gen::<f64>(), rng.gen::<f64>(), rng.gen::<f64>());
@@ -283,7 +284,7 @@ fn random_in_unit_sphere() -> Vector3<f64>{
     }
 }
 
-fn random_in_hemisphere(norm:&Vector3<f64>) -> Vector3<f64>{
+fn random_in_hemisphere(norm:&Vector3) -> Vector3{
         let v = random_in_unit_sphere();
         if v.dot(norm) < 0.0{
                 return -v;
@@ -291,11 +292,11 @@ fn random_in_hemisphere(norm:&Vector3<f64>) -> Vector3<f64>{
         return v;
 }
 
-fn random_unit_vector() -> Vector3<f64>{
+fn random_unit_vector() -> Vector3{
     let v = random_in_unit_sphere();
     return v.normalize();
 }
 
-fn reflect(v:&Vector3<f64>, norm:&Vector3<f64>) -> Vector3<f64>{
+fn reflect(v:&Vector3, norm:&Vector3) -> Vector3{
     return v - 2.0 * v.dot(norm) * norm;
 }

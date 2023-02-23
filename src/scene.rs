@@ -1,7 +1,8 @@
 #![allow(dead_code)]
 
 extern crate nalgebra as na;
-use na::{Vector3};
+//use na::{Vector3};
+use crate::vector3::Vector3;
 use std::collections::HashMap;
 
 pub mod objects;
@@ -12,11 +13,11 @@ use objects::Object;
 use lights::Light;
 
 pub struct Camera{
-    pub position:Vector3<f64>,
-    pub target:Vector3<f64>,
-    pub forward:Vector3<f64>,
-    pub right:Vector3<f64>,
-    pub up:Vector3<f64>,
+    pub position:Vector3,
+    pub target:Vector3,
+    pub forward:Vector3,
+    pub right:Vector3,
+    pub up:Vector3,
     pub fov:f64,
     pub focus_dist:f64,
     pub focus_blur:f64,
@@ -27,7 +28,7 @@ pub struct Camera{
 }
 
 impl Camera{
-    pub fn new(position:Vector3<f64>, target:Vector3<f64>, up:Vector3<f64>, fov:f64) -> Self{
+    pub fn new(position:Vector3, target:Vector3, up:Vector3, fov:f64) -> Self{
         let forward = (target - position).normalize();
         let right = forward.cross(&up).normalize();
         let up = right.cross(&forward);
@@ -62,7 +63,7 @@ impl Camera{
         self.focus_blur = focus_blur;
     }
 
-    pub fn move_to(&mut self, position:&Vector3<f64>){
+    pub fn move_to(&mut self, position:&Vector3){
         self.position = *position;
         self.update_camera_vectors();
     }
@@ -78,8 +79,8 @@ pub struct Scene{
     pub main_camera:Camera,
     pub objects:Vec<Object>,
     pub lights:Vec<Light>,
-    pub gradient_light_1:Vector3<f64>,
-    pub gradient_light_2:Vector3<f64>,
+    pub gradient_light_1:Vector3,
+    pub gradient_light_2:Vector3,
 }
 
 pub fn load_scene() -> Scene{

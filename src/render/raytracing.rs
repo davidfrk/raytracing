@@ -9,9 +9,10 @@ use intersection::Hit;
 use intersection::HitData;
 
 extern crate nalgebra as na;
-use na::Vector3;
+//use na::Vector3;
+use crate::vector3::Vector3;
 
-pub fn cast_ray(scene:&Scene, ray:&Ray, rays:u8, depth:u8) -> Vector3<f64>{
+pub fn cast_ray(scene:&Scene, ray:&Ray, rays:u8, depth:u8) -> Vector3{
 	let intersection = intersection::raycast(scene, ray);
 
 	match intersection{
@@ -23,13 +24,13 @@ pub fn cast_ray(scene:&Scene, ray:&Ray, rays:u8, depth:u8) -> Vector3<f64>{
 		Hit::Something(ref hit_data) => {
 			return //color_mult(&scene.ambient_light, &hit_data.object.material.color)
 				//hit_data.object.material.emission
-				compute_direct_illumination(scene, &ray.direction, &hit_data) +
+				//compute_direct_illumination(scene, &ray.direction, &hit_data) +
 				compute_indirect_illumination(scene, ray, &hit_data, rays, depth);
 		},
 	}
 }
 
-fn compute_direct_illumination(scene:&Scene, direction:&Vector3<f64>, hit_data:&HitData) -> Vector3<f64>{
+fn compute_direct_illumination(scene:&Scene, direction:&Vector3, hit_data:&HitData) -> Vector3{
 	let mut color = Vector3::new(0.0, 0.0, 0.0);
 
 	match hit_data.object.material{
@@ -40,7 +41,7 @@ fn compute_direct_illumination(scene:&Scene, direction:&Vector3<f64>, hit_data:&
 	}
 
 	//let cam_norm_cos = hit_data.norm.dot(&direction);
-	let effective_norm:Vector3<f64>;
+	let effective_norm:Vector3;
 
 	//if cam_norm_cos > 0.0{
 	if hit_data.inside{
@@ -86,7 +87,7 @@ fn compute_direct_illumination(scene:&Scene, direction:&Vector3<f64>, hit_data:&
 	return color;
 }
 
-fn compute_indirect_illumination(scene:&Scene, in_ray:&Ray, hit_data:&HitData, rays:u8, depth:u8) -> Vector3<f64>{
+fn compute_indirect_illumination(scene:&Scene, in_ray:&Ray, hit_data:&HitData, rays:u8, depth:u8) -> Vector3{
 	let mut color = Vector3::new(0.0, 0.0, 0.0);
 
 	if depth > 0 {
@@ -119,10 +120,10 @@ fn compute_indirect_illumination(scene:&Scene, in_ray:&Ray, hit_data:&HitData, r
 	return color;
 }
 
-fn near_zero(vector:&Vector3<f64>) -> bool{
+fn near_zero(vector:&Vector3) -> bool{
 	return vector.x.is_nan() || vector.y.is_nan() || vector.z.is_nan();
 }
 
-fn vector_mult(vector_a:&Vector3<f64>, vector_b:&Vector3<f64>) -> Vector3<f64> {
+fn vector_mult(vector_a:&Vector3, vector_b:&Vector3) -> Vector3 {
     return Vector3::new(vector_a.x * vector_b.x, vector_a.y * vector_b.y, vector_a.z * vector_b.z);
 }

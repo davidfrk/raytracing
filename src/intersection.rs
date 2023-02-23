@@ -5,11 +5,12 @@ use scene::objects::Shape;
 use scene::objects::Sphere;
 
 extern crate nalgebra as na;
-use na::Vector3;
+//use na::Vector3;
+use crate::vector3::Vector3;
 
 pub struct Ray{
-	pub origin:Vector3<f64>,
-	pub direction:Vector3<f64>,
+	pub origin:Vector3,
+	pub direction:Vector3,
 }
 
 pub enum Hit<'a>{
@@ -18,8 +19,8 @@ pub enum Hit<'a>{
 }
 
 pub struct HitData<'a>{
-	pub point:Vector3<f64>,
-	pub norm:Vector3<f64>,
+	pub point:Vector3,
+	pub norm:Vector3,
 	pub inside:bool,
 	pub distance:f64,
 	pub object:&'a Object,

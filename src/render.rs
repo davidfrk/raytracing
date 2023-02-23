@@ -3,7 +3,8 @@ use scene::Scene;
 
 use image::{ImageBuffer, RgbImage};
 extern crate nalgebra as na;
-use na::Vector3;
+//use na::Vector3;
+use crate::vector3::Vector3;
 use rand::Rng;
 use crate::intersection::Ray;
 
@@ -16,7 +17,7 @@ pub fn render(scene:&Scene, width:u32, height:u32) -> RgbImage{
     let gamma = 2.2;
 
     //Anti-aliasing
-    let rays_per_pixel = 400;
+    let rays_per_pixel = 32;
     let rays = 1;
     let depth = 12;
 
@@ -108,7 +109,7 @@ pub fn render(scene:&Scene, width:u32, height:u32) -> RgbImage{
     return img;
 }
 
-fn random_in_unit_disk() -> Vector3<f64>{
+fn random_in_unit_disk() -> Vector3{
     let mut rng = rand::thread_rng();
     loop{
         let x = rng.gen_range(-1.0 .. 1.0);
