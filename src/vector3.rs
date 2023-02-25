@@ -195,3 +195,12 @@ impl ops::Div<f64> for Vector3{
 		self * (1.0/other)
 	}
 }
+
+impl ops::Div<f64> for &Vector3{
+	type Output = Vector3;
+
+	#[inline(always)]
+	fn div(self, other:f64) ->Vector3{
+		self * (1.0/other)
+	}
+}

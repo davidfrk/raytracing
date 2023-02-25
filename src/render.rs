@@ -17,8 +17,7 @@ pub fn render(scene:&Scene, width:u32, height:u32) -> RgbImage{
     let gamma = 2.2;
 
     //Anti-aliasing
-    let rays_per_pixel = 32;
-    let rays = 1;
+    let rays_per_pixel = 400;
     let depth = 12;
 
     //Get camera focus and blur
@@ -42,8 +41,14 @@ pub fn render(scene:&Scene, width:u32, height:u32) -> RgbImage{
     for pixel_y in 0..height{
         for pixel_x in 0..width{
             let mut color = Vector3::new(0.0, 0.0, 0.0);
-
-            for _i in 0..rays_per_pixel{
+            
+            //attention to detail algorithm
+            let mut prev_color = color;
+            let mut current_ray_count = 0;
+            let mut last_pixel_update = 0;
+            
+            //for _i in 0..rays_per_pixel{ //fixed ray count per pixel
+            while !did_converge(&mut prev_color, &color, &mut last_pixel_update, current_ray_count){ //attention to detail algorithm
                 let mut pixel_x = pixel_x as f64;
                 let mut pixel_y = pixel_y as f64;
                 
@@ -84,10 +89,12 @@ pub fn render(scene:&Scene, width:u32, height:u32) -> RgbImage{
                 };
 
                 //Cast Ray
-                color += raytracing::cast_ray(&scene, &ray, rays, depth);
+                color += raytracing::cast_ray(&scene, &ray, depth);
+                current_ray_count+= 1; //attention to detail algorithm
             }
-            
-            color = 1.0 / rays_per_pixel as f64 * color;
+
+            color = 1.0 / current_ray_count as f64 * color; // attention to detail algorithm
+            //color = 1.0 / rays_per_pixel as f64 * color; // fixed ray count per pixel
 
             //Gamma correction and clamp
             color = exposure * color;
@@ -107,6 +114,26 @@ pub fn render(scene:&Scene, width:u32, height:u32) -> RgbImage{
     }
 
     return img;
+}
+
+fn did_converge(last_color:&mut Vector3, color:& Vector3, last_update:&mut u32, current_count:u32) -> bool{
+    if *last_update + 20 > current_count{
+        return false;
+    }
+    let diff = *last_color / *last_update as f64 - color / current_count as f64;
+    let norm = diff.norm();
+
+    if norm < 0.001{
+        return true;
+    }else{
+        *last_color = *color;
+        *last_update = current_count;
+        /*
+        if current_count > 100{
+            println!("{}", current_count);
+        }*/
+        return false;
+    }
 }
 
 fn random_in_unit_disk() -> Vector3{

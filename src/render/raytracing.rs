@@ -12,7 +12,7 @@ extern crate nalgebra as na;
 //use na::Vector3;
 use crate::vector3::Vector3;
 
-pub fn cast_ray(scene:&Scene, ray:&Ray, rays:u8, depth:u8) -> Vector3{
+pub fn cast_ray(scene:&Scene, ray:&Ray, depth:u8) -> Vector3{
 	let intersection = intersection::raycast(scene, ray);
 
 	match intersection{
@@ -25,7 +25,7 @@ pub fn cast_ray(scene:&Scene, ray:&Ray, rays:u8, depth:u8) -> Vector3{
 			return //color_mult(&scene.ambient_light, &hit_data.object.material.color)
 				//hit_data.object.material.emission
 				//compute_direct_illumination(scene, &ray.direction, &hit_data) +
-				compute_indirect_illumination(scene, ray, &hit_data, rays, depth);
+				compute_indirect_illumination(scene, ray, &hit_data, depth);
 		},
 	}
 }
@@ -87,7 +87,7 @@ fn compute_direct_illumination(scene:&Scene, direction:&Vector3, hit_data:&HitDa
 	return color;
 }
 
-fn compute_indirect_illumination(scene:&Scene, in_ray:&Ray, hit_data:&HitData, rays:u8, depth:u8) -> Vector3{
+fn compute_indirect_illumination(scene:&Scene, in_ray:&Ray, hit_data:&HitData, depth:u8) -> Vector3{
 	let mut color = Vector3::new(0.0, 0.0, 0.0);
 
 	if depth > 0 {
@@ -107,7 +107,7 @@ fn compute_indirect_illumination(scene:&Scene, in_ray:&Ray, hit_data:&HitData, r
 			}
 
 			//let cos = effective_norm.dot(&dir);
-			color += /* cos.abs() * */ cast_ray(scene, &out_ray, rays, depth - 1);
+			color += /* cos.abs() * */ cast_ray(scene, &out_ray, depth - 1);
 		}
 
 		color = vector_mult(&color, &hit_data.object.material.attenuation());
