@@ -7,7 +7,6 @@ extern crate nalgebra as na;
 use crate::vector3::Vector3;
 use rand::Rng;
 use crate::intersection::Ray;
-//use crate::render::raytracingConfig::RaytracingConfig;
 
 mod raytracing;
 pub mod raytracing_config;

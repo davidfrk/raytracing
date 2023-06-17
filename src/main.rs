@@ -15,7 +15,7 @@ fn main() {
     let now = Instant::now();
 
     let raytracing_config = render::raytracing_config::RaytracingConfig{
-        exposure:1.0, gamma:2.2, rays_per_pixel:2, ray_bounce_max_depth:8,};
+        exposure:1.0, gamma:2.2, rays_per_pixel:2, ray_bounce_max_depth:12,};
 
     pub enum RenderOption{
         Image,
