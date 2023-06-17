@@ -10,12 +10,12 @@ mod vector3;
 use std::time::{Instant};
 
 fn main() {
-    let window = window::Window{width:800, height:800,};
+    let window = window::Window{width:1920, height:1080,};
     let mut main_scene = scene::load_scene();
     let now = Instant::now();
 
     let raytracing_config = render::raytracing_config::RaytracingConfig{
-        exposure:1.0, gamma:2.2, rays_per_pixel:400, ray_bounce_max_depth:12,};
+        exposure:1.0, gamma:2.2, rays_per_pixel:2, ray_bounce_max_depth:8,};
 
     pub enum RenderOption{
         Image,

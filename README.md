@@ -1,4 +1,4 @@
-#Raytracing with Rust
+# Raytracing with Rust
 
 ![Metal](./images/Reflection.png)
 ![Refraction](./images/Refraction.png)
