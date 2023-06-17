@@ -7,18 +7,20 @@ extern crate nalgebra as na;
 use crate::vector3::Vector3;
 use rand::Rng;
 use crate::intersection::Ray;
+//use crate::render::raytracingConfig::RaytracingConfig;
 
 mod raytracing;
+pub mod raytracing_config;
 
-pub fn render(scene:&Scene, width:u32, height:u32) -> RgbImage{
+pub fn render(scene:&Scene, width:u32, height:u32, raytracing_config:raytracing_config::RaytracingConfig) -> RgbImage{
     let mut img:RgbImage = ImageBuffer::new(width, height);
     //Color correction
-    let exposure = 1.0;
-    let gamma = 2.2;
+    let exposure = raytracing_config.exposure;
+    let gamma = raytracing_config.gamma;
 
     //Anti-aliasing
-    let rays_per_pixel = 400;
-    let depth = 12;
+    let rays_per_pixel = raytracing_config.rays_per_pixel;
+    let depth = raytracing_config.ray_bounce_max_depth;
 
     //Get camera focus and blur
     let focus_distance = scene.main_camera.focus_dist;

@@ -7,6 +7,7 @@ use crate::scene;
 use scene::Scene;
 
 use crate::render;
+use crate::render::raytracing_config::RaytracingConfig;
 
 use crate::scene::materials;
 use materials::Material;
@@ -15,7 +16,7 @@ use materials::Material;
 //use na::Vector3;
 use crate::vector3::Vector3;
 
-pub fn render_blur_transition(window:&Window, scene:&mut Scene, frames:u32, focus_dist_start:f64, focus_dist_end:f64, focus_blur_start:f64, focus_blur_end:f64){
+pub fn render_blur_transition(window:&Window, raytracing_config:RaytracingConfig, scene:&mut Scene, frames:u32, focus_dist_start:f64, focus_dist_end:f64, focus_blur_start:f64, focus_blur_end:f64){
 	for i in 0..frames{
 		let t = i as f64 / frames as f64;
 
@@ -23,14 +24,14 @@ pub fn render_blur_transition(window:&Window, scene:&mut Scene, frames:u32, focu
 		let focus_blur = (1.0 - t) * focus_blur_start + t * focus_blur_end;
 		scene.main_camera.set_focus_blur(focus_dist, focus_blur);
 		
-		let img = render::render(scene, window.width, window.height);
+		let img = render::render(scene, window.width, window.height, raytracing_config);
 		img.save(generate_file_name(i)).unwrap();
 
 		println!("Frame: {}", i.to_string());
 	}
 }
 
-pub fn render_camera_rotation (window:&Window, scene:&mut Scene, frames:u32, radius:f64){
+pub fn render_camera_rotation (window:&Window, raytracing_config:RaytracingConfig, scene:&mut Scene, frames:u32, radius:f64){
 	let x = Vector3::new(1.0, 0.0, 0.0);
 	let z = Vector3::new(0.0, 0.0, 1.0);
 
@@ -50,14 +51,14 @@ pub fn render_camera_rotation (window:&Window, scene:&mut Scene, frames:u32, rad
 
 		scene.main_camera.move_to(&pos);
 
-		let img = render::render(scene, window.width, window.height);
+		let img = render::render(scene, window.width, window.height, raytracing_config);
 		img.save(generate_file_name(i)).unwrap();
 
 		println!("Frame: {}", i.to_string());
 	}
 }
 
-pub fn render_metal_fuzz_animation(window:&Window, scene:&mut Scene, starting_frame:u32, frames:u32, object_id:u32, fuzz_start:f64, fuzz_end:f64){
+pub fn render_metal_fuzz_animation(window:&Window, raytracing_config:RaytracingConfig, scene:&mut Scene, starting_frame:u32, frames:u32, object_id:u32, fuzz_start:f64, fuzz_end:f64){
 	for i in 0..frames{
 		//Interpolate fuzz
 		let t = i as f64 / frames as f64;
@@ -77,7 +78,7 @@ pub fn render_metal_fuzz_animation(window:&Window, scene:&mut Scene, starting_fr
 		}
 
 		//Render image
-		let img = render::render(scene, window.width, window.height);
+		let img = render::render(scene, window.width, window.height, raytracing_config);
 		img.save(generate_file_name(i + starting_frame) ).unwrap();
 
 		println!("Frame: {}", (i + starting_frame).to_string());
