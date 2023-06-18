@@ -49,7 +49,7 @@ pub fn render(scene:&Scene, width:u32, height:u32, raytracing_config:raytracing_
             let mut last_pixel_update = 0;
             
             //for _i in 0..rays_per_pixel{ //fixed ray count per pixel
-            while !did_converge(&mut prev_color, &color, &mut last_pixel_update, current_ray_count){ //attention to detail algorithm
+            while !did_converge(&mut prev_color, &color, &mut last_pixel_update, current_ray_count, raytracing_config.convergence_threshold){ //attention to detail algorithm
                 let mut pixel_x = pixel_x as f64;
                 let mut pixel_y = pixel_y as f64;
                 
@@ -117,14 +117,16 @@ pub fn render(scene:&Scene, width:u32, height:u32, raytracing_config:raytracing_
     return img;
 }
 
-fn did_converge(last_color:&mut Vector3, color:& Vector3, last_update:&mut u32, current_count:u32) -> bool{
+fn did_converge(last_color:&mut Vector3, color:& Vector3, last_update:&mut u32, current_count:u32, convergence_threshold:f64) -> bool{
     if *last_update + 20 > current_count{
         return false;
     }
     let diff = *last_color / *last_update as f64 - color / current_count as f64;
-    let norm = diff.norm();
+    let abs_diff = diff.x.abs() + diff.y.abs() + diff.z.abs();
+    //let norm = diff.norm();
 
-    if norm < 0.001{
+    //if norm < 0.001{
+    if abs_diff < convergence_threshold{
         return true;
     }else{
         *last_color = *color;

@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 //use std::io;
 
 mod window;
@@ -15,7 +16,7 @@ fn main() {
     let now = Instant::now();
 
     let raytracing_config = render::raytracing_config::RaytracingConfig{
-        exposure:1.0, gamma:2.2, rays_per_pixel:2, ray_bounce_max_depth:12,};
+        exposure:1.0, gamma:2.2, rays_per_pixel:0, ray_bounce_max_depth:12, convergence_threshold:0.002};
 
     pub enum RenderOption{
         Image,
