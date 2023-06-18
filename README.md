@@ -2,6 +2,7 @@
 
 - [Images](#images)
 - [Animations](#animations)
+- [Author](#author)
 
 ## Images
 
@@ -21,4 +22,8 @@ https://github.com/davidfrk/raytracing/assets/11388028/10b0d727-4e8b-4173-85f0-d
 
 
 https://github.com/davidfrk/raytracing/assets/11388028/f705bb08-ee24-45aa-9b03-4b7b1b8ea6df
+
+## Author
+
+David Andrade.
 
