@@ -1,5 +1,5 @@
 #![allow(dead_code, unused_variables)]
-extern crate nalgebra as na;
+//extern crate nalgebra as na;
 //use na::Vector3;
 use crate::vector3::Vector3;
 
@@ -117,7 +117,7 @@ impl Scatterable for Emission{
 }
 
 impl Diffuse{
-        pub fn create(color:Vector3) -> Material{
+        pub const fn create(color:Vector3) -> Material{
                 Material::Diffuse(Diffuse{
                         color,
                 })
@@ -127,6 +127,8 @@ impl Diffuse{
                 return scatter_diffuse(dir_in, hit_data, &mut out.direction);
         }
 }
+
+pub static BASE_MATERIAL:Material = Diffuse::create(Vector3::new(0.0, 0.0, 0.0));
 
 impl Metal{
         pub fn create(color:Vector3, fuzz:f64) -> Material{

@@ -8,9 +8,11 @@ use intersection::Ray;
 use intersection::Hit;
 use intersection::HitData;
 
-extern crate nalgebra as na;
+//extern crate nalgebra as na;
 //use na::Vector3;
 use crate::vector3::Vector3;
+
+static DISPLACEMENT_DISTANCE:f64 = 0.0000001;
 
 pub fn cast_ray(scene:&Scene, ray:&Ray, depth:u8) -> Vector3{
 	let intersection = intersection::raycast(scene, ray);
@@ -40,10 +42,8 @@ fn compute_direct_illumination(scene:&Scene, direction:&Vector3, hit_data:&HitDa
 		_ => {}
 	}
 
-	//let cam_norm_cos = hit_data.norm.dot(&direction);
 	let effective_norm:Vector3;
 
-	//if cam_norm_cos > 0.0{
 	if hit_data.inside{
 		//If they are in the same direction reflection/surface norm must be inverted.
 		//Inside object, effective norm is flipped of surface norm
@@ -52,7 +52,7 @@ fn compute_direct_illumination(scene:&Scene, direction:&Vector3, hit_data:&HitDa
 		effective_norm = hit_data.norm;
 	}
 
-	let displacement_point = hit_data.point + 0.00001 * effective_norm;
+	let displacement_point = hit_data.point + DISPLACEMENT_DISTANCE * effective_norm;
 
 	//Direct light
 	for light in &scene.lights{
@@ -83,7 +83,7 @@ fn compute_direct_illumination(scene:&Scene, direction:&Vector3, hit_data:&HitDa
 		}
 	}
 
-	color = vector_mult(&color, &hit_data.object.material.attenuation());
+	color = color.mult(&hit_data.object.material.attenuation());
 	return color;
 }
 
@@ -101,16 +101,17 @@ fn compute_indirect_illumination(scene:&Scene, in_ray:&Ray, hit_data:&HitData, d
 		if hit_data.object.material.scatter(&in_ray.direction, &hit_data, &mut out_ray){
 			//Computing displacement point to prevent point float errors
 			if hit_data.norm.dot(&out_ray.direction) >= 0.0{
-				out_ray.origin +=  0.00001 * hit_data.norm;
+				out_ray.origin +=  DISPLACEMENT_DISTANCE * hit_data.norm;
 			}else{
-				out_ray.origin += - 0.00001 * hit_data.norm;
+				out_ray.origin += - DISPLACEMENT_DISTANCE * hit_data.norm;
 			}
 
-			//let cos = effective_norm.dot(&dir);
-			color += /* cos.abs() * */ cast_ray(scene, &out_ray, depth - 1);
+			//The math is with effective_norm instead of norm, however, we do a cos.abs() anyway
+			//let cos = hit_data.norm.dot(&in_ray.direction);
+			color +=  /* cos.abs() * */  cast_ray(scene, &out_ray, depth - 1);
 		}
 
-		color = vector_mult(&color, &hit_data.object.material.attenuation());
+		color = color.mult(&hit_data.object.material.attenuation());
 	}
 
 	if let Material::Emission(m) = hit_data.object.material{
@@ -118,12 +119,4 @@ fn compute_indirect_illumination(scene:&Scene, in_ray:&Ray, hit_data:&HitData, d
 	}
 
 	return color;
-}
-
-fn near_zero(vector:&Vector3) -> bool{
-	return vector.x.is_nan() || vector.y.is_nan() || vector.z.is_nan();
-}
-
-fn vector_mult(vector_a:&Vector3, vector_b:&Vector3) -> Vector3 {
-    return Vector3::new(vector_a.x * vector_b.x, vector_a.y * vector_b.y, vector_a.z * vector_b.z);
 }

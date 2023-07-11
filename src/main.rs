@@ -11,7 +11,7 @@ mod vector3;
 use std::time::{Instant};
 
 fn main() {
-    let window = window::Window{width:1920, height:1080,};
+    let window = window::Window{width:200, height:200,};
     let mut main_scene = scene::load_scene();
     let now = Instant::now();
 

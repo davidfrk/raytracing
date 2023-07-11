@@ -2,7 +2,7 @@ use crate::scene;
 use scene::Scene;
 
 use image::{ImageBuffer, RgbImage};
-extern crate nalgebra as na;
+//extern crate nalgebra as na;
 //use na::Vector3;
 use crate::vector3::Vector3;
 use rand::Rng;

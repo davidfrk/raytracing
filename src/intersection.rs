@@ -4,7 +4,7 @@ use scene::objects::Object;
 use scene::objects::Shape;
 use scene::objects::Sphere;
 
-extern crate nalgebra as na;
+//extern crate nalgebra as na;
 //use na::Vector3;
 use crate::vector3::Vector3;
 
@@ -28,13 +28,20 @@ pub struct HitData<'a>{
 
 pub fn raycast<'a>(scene:&'a Scene, ray:&'a Ray) -> Hit<'a>{
 	let mut closest_hit = Hit::Nothing;
+	let mut closest_distance = std::f64::MAX;
 
 	for obj in &scene.objects{
 		let hit = obj.intersection(ray);
+		
 		match hit{
 			Hit::Nothing => {continue;},
 			Hit::Something(ref hit_data) => {
 				
+				if hit_data.distance < closest_distance{
+					closest_distance = hit_data.distance;
+					closest_hit = hit;
+				}
+				/*
 				match closest_hit{
 					Hit::Nothing => {closest_hit = hit;},
 					Hit::Something(ref closest_hit_data) => {
@@ -43,7 +50,7 @@ pub fn raycast<'a>(scene:&'a Scene, ray:&'a Ray) -> Hit<'a>{
 						}
 					},
 				}
-				
+				*/
 			},
 		}
 	}

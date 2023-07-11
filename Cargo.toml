@@ -10,5 +10,5 @@ debug = true
 
 [dependencies]
 rand = "0.8.5"
-nalgebra = "0.31.4"
+# nalgebra = "0.31.4"
 image = "0.24.5"

@@ -11,7 +11,7 @@ pub struct Vector3{
 }
 
 impl Vector3{
-	pub fn new(x:f64, y:f64, z:f64) -> Vector3{
+	pub const fn new(x:f64, y:f64, z:f64) -> Vector3{
 		Vector3{
 			x,
 			y,
@@ -51,6 +51,10 @@ impl Vector3{
             y: self.z * other.x - self.x * other.z,
             z: self.x * other.y - self.y * other.x,
         }
+	}
+
+	pub fn is_near_zero(&self) -> bool{
+		return self.x.is_nan() || self.y.is_nan() || self.z.is_nan();
 	}
 }
 
