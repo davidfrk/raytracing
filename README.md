@@ -1,5 +1,7 @@
 # Raytracing with Rust
 
+Multicore ray tracing powered by rayon.
+
 - [Images](#images)
 - [Animations](#animations)
 - [Author](#author)

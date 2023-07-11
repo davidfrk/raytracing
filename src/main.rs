@@ -11,12 +11,12 @@ mod vector3;
 use std::time::Instant;
 
 fn main() {
-    let window = window::Window{width:800, height:800,};
+    let window = window::Window{width:1920, height:1080,};
     let mut main_scene = scene::load_scene();
     let now = Instant::now();
 
     let raytracing_config = render::raytracing_config::RaytracingConfig{
-        exposure:1.0, gamma:2.2, rays_per_pixel:0, ray_bounce_max_depth:12, convergence_threshold:0.002};
+        exposure:1.0, gamma:2.2, rays_per_pixel:0, ray_bounce_max_depth:12, convergence_threshold:0.002, parallel:true};
 
     pub enum RenderOption{
         Image,
@@ -49,6 +49,6 @@ fn main() {
         },
     }
 
-    let render_time = now.elapsed().as_secs();
-    println!("Render time: {}", render_time);
+    let render_time = now.elapsed().as_millis();
+    println!("Render time: {}.{} seconds.", render_time / 1000, render_time % 1000);
 }

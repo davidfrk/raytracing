@@ -12,3 +12,4 @@ debug = true
 rand = "0.8.5"
 # nalgebra = "0.31.4"
 image = "0.24.5"
+rayon = "1.7.0"

@@ -1,7 +1,7 @@
 use crate::scene;
 use scene::Scene;
 
-use image::{ImageBuffer, RgbImage};
+use image::{ImageBuffer, RgbImage, Rgb};
 //extern crate nalgebra as na;
 //use na::Vector3;
 use crate::vector3::Vector3;
@@ -11,15 +11,13 @@ use crate::intersection::Ray;
 mod raytracing;
 pub mod raytracing_config;
 
-pub fn render(scene:&Scene, width:u32, height:u32, raytracing_config:raytracing_config::RaytracingConfig) -> RgbImage{
-    let mut img:RgbImage = ImageBuffer::new(width, height);
-    //Color correction
-    let exposure = raytracing_config.exposure;
-    let gamma = raytracing_config.gamma;
+use std::sync::{Arc, Mutex};
+use rayon::prelude::*;
 
-    //Anti-aliasing
-    let rays_per_pixel = raytracing_config.rays_per_pixel;
-    let depth = raytracing_config.ray_bounce_max_depth;
+pub fn render(scene:&Scene, width:u32, height:u32, raytracing_config:raytracing_config::RaytracingConfig) -> RgbImage{
+    //ImageBuffer<Rgb<u8>, Vec<u8>>
+    let arc_img = Arc::new(Mutex::new(ImageBuffer::<Rgb<u8>, Vec<u8>>::new(width, height)));
+    //let img:RgbImage = ImageBuffer::new(width, height);
 
     //Get camera focus and blur
     let focus_distance = scene.main_camera.focus_dist;
@@ -36,10 +34,13 @@ pub fn render(scene:&Scene, width:u32, height:u32, raytracing_config:raytracing_
     let right = scene.main_camera.right;
     let up = scene.main_camera.up;
 
-    let mut rng = rand::thread_rng();
+    //let mut rng = rand::thread_rng();
 
-    //render it
-    for pixel_y in 0..height{
+    fn render_line(pixel_y:u32, height: u32, width: u32, origin: Vector3, forward: Vector3, right: Vector3, up: Vector3,
+        camera_width: f64, camera_height: f64, focus_distance: f64, focus_blur: f64, scene: &Scene,
+        raytracing_config:raytracing_config::RaytracingConfig, img: &Arc<Mutex<ImageBuffer<Rgb<u8>, Vec<u8>>>>){
+        
+        let mut rng = rand::thread_rng();
         for pixel_x in 0..width{
             let mut color = Vector3::new(0.0, 0.0, 0.0);
             
@@ -53,7 +54,7 @@ pub fn render(scene:&Scene, width:u32, height:u32, raytracing_config:raytracing_
                 let mut pixel_x = pixel_x as f64;
                 let mut pixel_y = pixel_y as f64;
                 
-                if rays_per_pixel == 1{
+                if raytracing_config.rays_per_pixel == 1{
                     pixel_x +=  0.5;
                     pixel_y +=  0.5;
                 }else{
@@ -90,7 +91,7 @@ pub fn render(scene:&Scene, width:u32, height:u32, raytracing_config:raytracing_
                 };
 
                 //Cast Ray
-                color += raytracing::cast_ray(&scene, &ray, depth);
+                color += raytracing::cast_ray(&scene, &ray, raytracing_config.ray_bounce_max_depth);
                 current_ray_count+= 1; //attention to detail algorithm
             }
 
@@ -98,10 +99,10 @@ pub fn render(scene:&Scene, width:u32, height:u32, raytracing_config:raytracing_
             //color = 1.0 / rays_per_pixel as f64 * color; // fixed ray count per pixel
 
             //Gamma correction and clamp
-            color = exposure * color;
-            color.x = (f64::powf(color.x, gamma)).clamp(0.0, 1.0);
-            color.y = (f64::powf(color.y, gamma)).clamp(0.0, 1.0);
-            color.z = (f64::powf(color.z, gamma)).clamp(0.0, 1.0);
+            color = raytracing_config.exposure * color;
+            color.x = (f64::powf(color.x, raytracing_config.gamma)).clamp(0.0, 1.0);
+            color.y = (f64::powf(color.y, raytracing_config.gamma)).clamp(0.0, 1.0);
+            color.z = (f64::powf(color.z, raytracing_config.gamma)).clamp(0.0, 1.0);
 
             //Writing pixel
             let r = (color.x * 255.0).floor() as u8;
@@ -109,12 +110,27 @@ pub fn render(scene:&Scene, width:u32, height:u32, raytracing_config:raytracing_
             let b = (color.z * 255.0).floor() as u8;
             let rgb = image::Rgb([r, g, b]);
             
-            img.put_pixel(pixel_x, pixel_y, rgb);
+            img.lock().unwrap().put_pixel(pixel_x, pixel_y, rgb);
         }
-        println!("Line: {}", pixel_y);
+        if pixel_y % 50 == 0 {
+            println!("Line: {}", pixel_y);
+        }
     }
 
-    return img;
+    //Render it
+    if raytracing_config.parallel{
+        //Render in parallel with rayon
+        (0..height).into_par_iter().for_each( | line | render_line(line, height, width, origin, forward, right, up, camera_width, camera_height,
+            focus_distance, focus_blur, scene, raytracing_config, &arc_img));
+    }else{
+        for line in 0..height{
+            render_line(line, height, width, origin, forward, right, up, camera_width, camera_height,
+                focus_distance, focus_blur, scene, raytracing_config, &arc_img);
+        }
+    }
+
+    let img = &*arc_img.lock().unwrap();
+    return img.clone();
 }
 
 fn did_converge(last_color:&mut Vector3, color:& Vector3, last_update:&mut u32, current_count:u32, convergence_threshold:f64) -> bool{

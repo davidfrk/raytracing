@@ -9,4 +9,7 @@ pub struct RaytracingConfig{
 	pub rays_per_pixel:u32,
 	pub ray_bounce_max_depth:u8,
 	pub convergence_threshold:f64,
+
+	//Parallelization properties
+	pub parallel:bool,
 }
