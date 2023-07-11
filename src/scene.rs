@@ -12,6 +12,8 @@ pub mod materials;
 use objects::Object;
 use lights::Light;
 
+use self::objects::Sphere;
+
 pub struct Camera{
     pub position:Vector3,
     pub target:Vector3,
@@ -82,10 +84,23 @@ pub struct Scene{
     pub gradient_light_1:Vector3,
     pub gradient_light_2:Vector3,
 
-    pub materials: HashMap<String, materials::Material>,
+    pub materials:HashMap<String, materials::Material>,
+    pub spheres:Vec<Sphere>,
 }
 
 impl Scene{
+    pub fn new(camera:Camera) -> Scene{
+        return Scene{
+            main_camera:camera,
+            objects:Vec::new(),
+            lights:Vec::new(),
+            gradient_light_1:Vector3::new(0.67, 0.84, 0.97),
+            gradient_light_2:Vector3::new(0.57, 0.63, 0.70),
+            materials:HashMap::new(),
+            spheres:Vec::new(),
+        };
+    }
+
     pub fn add_material(&mut self, name:String, material:materials::Material){
         self.materials.insert(name, material);
     }
@@ -96,6 +111,7 @@ impl Scene{
 
     pub fn create_sphere(&mut self, pos:Vector3, radius:f64, material: &String){
         self.objects.push(objects::Sphere::create(pos, radius, *self.get_material(material)));
+        self.spheres.push(Sphere::create_sphere(pos, radius));
     }
 }
 
@@ -104,32 +120,15 @@ pub fn load_scene() -> Scene{
     let main_camera = Camera::new(Vector3::new(10.0, 5.0, 0.0), 
         Vector3::new(01.0, 1.0, 0.0), Vector3::new(0.0, 1.0, 0.0), 60.0);
 
-    //Create materials
-    let materials = HashMap::new();
-
-    //Create objects
-    let objects:Vec<Object> = Vec::new();
+    //Create Scene
+    let mut scene:Scene = Scene::new(main_camera);
 
     //Create lights
-    let mut lights:Vec<Light> = Vec::new();
-    lights.push(lights::PointLight::create(Vector3::new(0.0, 5.0, -4.0), Vector3::new(1.0, 0.0, 0.0)));
-    lights.push(lights::PointLight::create(Vector3::new(0.0, 5.0, 0.0), Vector3::new(0.0, 1.0, 0.0)));
-    lights.push(lights::PointLight::create(Vector3::new(0.0, 5.0, 4.0), Vector3::new(0.0, 0.0, 1.0)));
+    scene.lights.push(lights::PointLight::create(Vector3::new(0.0, 5.0, -4.0), Vector3::new(1.0, 0.0, 0.0)));
+    scene.lights.push(lights::PointLight::create(Vector3::new(0.0, 5.0, 0.0), Vector3::new(0.0, 1.0, 0.0)));
+    scene.lights.push(lights::PointLight::create(Vector3::new(0.0, 5.0, 4.0), Vector3::new(0.0, 0.0, 1.0)));
 
-    //Skybox
-    let gradient_light_1 = Vector3::new(0.67, 0.84, 0.97);
-    let gradient_light_2 = Vector3::new(0.57, 0.63, 0.70);
-    //let gradient_light_2 = Vector3::new(0.63, 0.74, 0.90);
-
-    let mut scene:Scene = Scene{
-        main_camera,
-        objects,
-        lights,
-        gradient_light_1,
-        gradient_light_2,
-        materials,
-    };
-
+    ////////Create Materials
 
     //Emission
     scene.add_material(String::from("emission_1"), materials::Emission::create(Vector3::new(0.5, 0.5, 0.5), Vector3::new(0.8, 0.4, 0.4)));
@@ -217,217 +216,4 @@ pub fn load_scene() -> Scene{
     scene.create_sphere(portal_b_pos, 2.0, &String::from("portal_b"));
 
     return scene;
-}
-
-
-pub fn load_scene_2() -> Scene{
-    //Set camera
-    let main_camera = Camera::new(Vector3::new(10.0, 7.0, 0.0), 
-        Vector3::new(1.0, 1.0, 0.0), Vector3::new(0.0, 1.0, 0.0), 60.0);
-
-    //Create materials
-    let mut materials = HashMap::new();
-    let base = materials::Diffuse::create(Vector3::new(0.0, 0.0, 0.0));
-
-    //Emission
-    materials.insert(String::from("emission_1"), materials::Emission::create(Vector3::new(0.5, 0.5, 0.5), Vector3::new(0.8, 0.4, 0.4)));
-    materials.insert(String::from("emission_2"), materials::Emission::create(Vector3::new(0.5, 0.5, 0.5), Vector3::new(0.8, 0.8, 0.4)));
-    materials.insert(String::from("emission_3"), materials::Emission::create(Vector3::new(0.5, 0.5, 0.5), Vector3::new(0.8, 0.4, 0.8)));
-    materials.insert(String::from("emission_white"), materials::Emission::create(Vector3::new(0.5, 0.5, 0.5), Vector3::new(0.8, 0.8, 0.8)));
-    materials.insert(String::from("emission_red"), materials::Emission::create(Vector3::new(0.5, 0.5, 0.5), Vector3::new(0.95, 0.1, 0.1)));
-    materials.insert(String::from("emission_green"), materials::Emission::create(Vector3::new(0.5, 0.5, 0.5), Vector3::new(0.1, 0.95, 0.1)));
-    materials.insert(String::from("emission_blue"), materials::Emission::create(Vector3::new(0.5, 0.5, 0.5), Vector3::new(0.1, 0.1, 0.95)));
-
-    //Diffuse
-    materials.insert(String::from("diffuse_white"), materials::Diffuse::create(Vector3::new(0.9, 0.9, 0.9)));
-    materials.insert(String::from("diffuse_red"), materials::Diffuse::create(Vector3::new(0.9, 0.1, 0.1)));
-    materials.insert(String::from("diffuse_green"), materials::Diffuse::create(Vector3::new(0.1, 0.9, 0.1)));
-    materials.insert(String::from("diffuse_blue"), materials::Diffuse::create(Vector3::new(0.1, 0.1, 0.9)));
-    materials.insert(String::from("diffuse_yellow"), materials::Diffuse::create(Vector3::new(0.9, 0.9, 0.0)));
-    materials.insert(String::from("diffuse_black"), materials::Diffuse::create(Vector3::new(0.1, 0.1, 0.1)));
-    materials.insert(String::from("diffuse_dark_gray"), materials::Diffuse::create(Vector3::new(0.3, 0.3, 0.3)));
-
-    //Metal
-    materials.insert(String::from("metal_red_fuzz"), materials::Metal::create(Vector3::new(1.0, 0.45, 0.45), 0.7));
-    materials.insert(String::from("metal_gray_fuzz"), materials::Metal::create(Vector3::new(0.7, 0.7, 0.7), 0.3));
-    materials.insert(String::from("metal_silver"), materials::Metal::create(Vector3::new(0.9, 0.9, 0.9), 0.05));
-    materials.insert(String::from("metal_silver_fuzz_0.2"), materials::Metal::create(Vector3::new(0.9, 0.9, 0.9), 0.2));
-    materials.insert(String::from("metal_silver_fuzz_0.4"), materials::Metal::create(Vector3::new(0.9, 0.9, 0.9), 0.4));
-    materials.insert(String::from("metal_silver_fuzz_0.6"), materials::Metal::create(Vector3::new(0.9, 0.9, 0.9), 0.6));
-    materials.insert(String::from("metal_silver_fuzz_0.8"), materials::Metal::create(Vector3::new(0.9, 0.9, 0.9), 0.8));
-
-    //Glass
-    materials.insert(String::from("glass_diamond"), materials::Glass::create(Vector3::new(1.0, 1.0, 1.0), 2.4));
-    materials.insert(String::from("glass_glass"), materials::Glass::create(Vector3::new(1.0, 1.0, 1.0), 1.8));
-    materials.insert(String::from("glass_r_1.0"), materials::Glass::create(Vector3::new(1.0, 1.0, 1.0), 1.0));
-    materials.insert(String::from("glass_r_1.4"), materials::Glass::create(Vector3::new(1.0, 1.0, 1.0), 1.4));
-    materials.insert(String::from("glass_r_1.8"), materials::Glass::create(Vector3::new(1.0, 1.0, 1.0), 1.8));
-    materials.insert(String::from("glass_r_2.2"), materials::Glass::create(Vector3::new(1.0, 1.0, 1.0), 2.2));
-    materials.insert(String::from("glass_r_2.6"), materials::Glass::create(Vector3::new(1.0, 1.0, 1.0), 2.6));
-
-    //Portals
-    let portal_a_pos = Vector3::new(0.0, 1.0, 2.0);
-    let portal_b_pos = Vector3::new(0.0, 5.0, 2.0);
-    materials.insert(String::from("portal_a"), materials::Portal::create(Vector3::new(1.0, 1.0, 1.0), portal_a_pos, portal_b_pos));
-    materials.insert(String::from("portal_b"), materials::Portal::create(Vector3::new(1.0, 1.0, 1.0), portal_b_pos, portal_a_pos));
-
-    /////////Create objects
-    let mut objects:Vec<Object> = Vec::new();
-
-    //Diffuse
-    objects.push(objects::Sphere::create(Vector3::new(0.0, -1000.0, 0.0), 1000.0, *materials.get(&String::from("diffuse_white")).unwrap_or(&base) ));
-
-    objects.push(objects::Sphere::create(Vector3::new(-5.0, 1.0, 2.0), 1.0, *materials.get(&String::from("diffuse_white")).unwrap_or(&base) ));
-    objects.push(objects::Sphere::create(Vector3::new(-2.5, 1.0, 2.0), 1.0, *materials.get(&String::from("diffuse_red")).unwrap_or(&base) ));
-    objects.push(objects::Sphere::create(Vector3::new(2.5, 1.0, 2.0), 1.0, *materials.get(&String::from("diffuse_green")).unwrap_or(&base) ));
-    objects.push(objects::Sphere::create(Vector3::new(0.0, 1.0, 2.0), 1.0, *materials.get(&String::from("diffuse_blue")).unwrap_or(&base) ));
-    objects.push(objects::Sphere::create(Vector3::new(5.0, 1.0, 2.0), 1.0, *materials.get(&String::from("diffuse_dark_gray")).unwrap_or(&base) ));
-
-    //Glass
-    objects.push(objects::Sphere::create(Vector3::new(-5.0, 1.0, 0.0), 1.0, *materials.get(&String::from("glass_r_1.0")).unwrap_or(&base) ));
-    objects.push(objects::Sphere::create(Vector3::new(-2.5, 1.0, 0.0), 1.0, *materials.get(&String::from("glass_r_1.4")).unwrap_or(&base) ));
-    objects.push(objects::Sphere::create(Vector3::new(0.0, 1.0, 0.0), 1.0, *materials.get(&String::from("glass_r_1.8")).unwrap_or(&base) ));
-    objects.push(objects::Sphere::create(Vector3::new(2.5, 1.0, 0.0), 1.0, *materials.get(&String::from("glass_r_2.2")).unwrap_or(&base) ));
-    objects.push(objects::Sphere::create(Vector3::new(5.0, 1.0, 0.0), 1.0, *materials.get(&String::from("glass_r_2.6")).unwrap_or(&base) ));
-    
-    //Metal
-    objects.push(objects::Sphere::create(Vector3::new(-5.0, 1.0, -2.0), 1.0, *materials.get(&String::from("metal_silver")).unwrap_or(&base) ));
-    objects.push(objects::Sphere::create(Vector3::new(-2.5, 1.0, -2.0), 1.0, *materials.get(&String::from("metal_silver_fuzz_0.2")).unwrap_or(&base) ));
-    objects.push(objects::Sphere::create(Vector3::new(0.0, 1.0, -2.0), 1.0, *materials.get(&String::from("metal_silver_fuzz_0.4")).unwrap_or(&base) ));
-    objects.push(objects::Sphere::create(Vector3::new(2.5, 1.0, -2.0), 1.0, *materials.get(&String::from("metal_silver_fuzz_0.6")).unwrap_or(&base) ));
-    objects.push(objects::Sphere::create(Vector3::new(5.0, 1.0, -2.0), 1.0, *materials.get(&String::from("metal_silver_fuzz_0.8")).unwrap_or(&base) ));
-
-    //Emission
-    objects.push(objects::Sphere::create(Vector3::new(0.0, 10.0, -5.0), 5.0, *materials.get(&String::from("emission_red")).unwrap_or(&base) ));
-    objects.push(objects::Sphere::create(Vector3::new(0.0, 10.0, 0.0), 5.0, *materials.get(&String::from("emission_green")).unwrap_or(&base) ));
-    objects.push(objects::Sphere::create(Vector3::new(0.0, 10.0, 5.0), 5.0, *materials.get(&String::from("emission_blue")).unwrap_or(&base) ));
-
-    //Portals
-    //objects.push(objects::Sphere::create(portal_a_pos, 2.0, *map.get(&String::from("portal_a")).unwrap_or(&base) ));
-    //objects.push(objects::Sphere::create(portal_b_pos, 2.0, *map.get(&String::from("portal_b")).unwrap_or(&base) ));
-
-    //Create lights
-    let mut lights:Vec<Light> = Vec::new();
-    lights.push(lights::PointLight::create(Vector3::new(0.0, 5.0, -4.0), Vector3::new(1.0, 0.0, 0.0)));
-    lights.push(lights::PointLight::create(Vector3::new(0.0, 5.0, 0.0), Vector3::new(0.0, 1.0, 0.0)));
-    lights.push(lights::PointLight::create(Vector3::new(0.0, 5.0, 4.0), Vector3::new(0.0, 0.0, 1.0)));
-
-    let gradient_light_1 = Vector3::new(0.67, 0.84, 0.97);
-    //let gradient_light_2 = Vector3::new(0.63, 0.74, 0.90);
-    let gradient_light_2 = Vector3::new(0.3, 0.3, 0.3);
-
-    return Scene{
-        main_camera,
-        objects,
-        lights,
-        gradient_light_1,
-        gradient_light_2,
-        materials,
-    };
-}
-
-
-pub fn load_scene_3() -> Scene{
-    //Set camera
-    /*
-    let main_camera = Camera {
-        position: Vector3::new(-3.5, 4.9, 3.0),
-        //position: Vector3::new(-3.0, 2.0, 4.0),
-        target: Vector3::new(0.0, 0.0, 1.0),
-        up: Vector3::new(0.0, 1.0, 0.0),
-        fov: 90.0,
-    };*/
-    let main_camera = Camera::new(Vector3::new(-3.5, 4.9, 3.0), 
-        Vector3::new(0.0, 1.0, 2.0), Vector3::new(0.0, 1.0, 0.0), 90.0);
-
-    //let main_camera = Camera::new(Vector3::new(-3.5, 1.0, 4.0), 
-    //    Vector3::new(-0.5, 1.0, 4.0), Vector3::new(0.0, 1.0, 0.0), 90.0);
-
-    //Create materials
-    let mut materials = HashMap::new();
-    let base = materials::Diffuse::create(Vector3::new(0.0, 0.0, 0.0));
-
-    //Emission
-    materials.insert(String::from("emission_1"), materials::Emission::create(Vector3::new(0.5, 0.5, 0.5), Vector3::new(0.8, 0.3, 0.3)));
-    materials.insert(String::from("emission_2"), materials::Emission::create(Vector3::new(0.5, 0.5, 0.5), Vector3::new(0.8, 0.8, 0.3)));
-    materials.insert(String::from("emission_3"), materials::Emission::create(Vector3::new(0.5, 0.5, 0.5), Vector3::new(0.8, 0.1, 0.8)));
-/*
-    map.insert(String::from("emission_1"), materials::Emission::create(Vector3::new(1.0, 0.4, 0.4)));
-    map.insert(String::from("emission_2"), materials::Emission::create(Vector3::new(0.4, 1.0, 0.4)));
-    map.insert(String::from("emission_3"), materials::Emission::create(Vector3::new(0.4, 0.0, 1.4)));
-*/
-    //Diffuse
-    materials.insert(String::from("diffuse_white"), materials::Diffuse::create(Vector3::new(0.9, 0.9, 0.9)));
-    materials.insert(String::from("diffuse_red"), materials::Diffuse::create(Vector3::new(0.9, 0.1, 0.1)));
-    materials.insert(String::from("diffuse_blue"), materials::Diffuse::create(Vector3::new(0.1, 0.1, 0.9)));
-    materials.insert(String::from("diffuse_yellow"), materials::Diffuse::create(Vector3::new(0.9, 0.9, 0.0)));
-    //Metal
-    materials.insert(String::from("metal_red_fuzz"), materials::Metal::create(Vector3::new(1.0, 0.45, 0.45), 0.7));
-    materials.insert(String::from("metal_gray_fuzz"), materials::Metal::create(Vector3::new(0.7, 0.7, 0.7), 0.3));
-    materials.insert(String::from("metal_silver"), materials::Metal::create(Vector3::new(0.9, 0.9, 0.9), 0.05));
-
-    //Glass
-    materials.insert(String::from("glass_diamond"), materials::Glass::create(Vector3::new(1.0, 1.0, 1.0), 2.4));
-    materials.insert(String::from("glass_glass"), materials::Glass::create(Vector3::new(1.0, 1.0, 1.0), 1.8));
-
-    //Portals
-    let portal_a_pos = Vector3::new(0.0, 1.0, 2.0);
-    let portal_b_pos = Vector3::new(0.0, 5.0, 2.0);
-    materials.insert(String::from("portal_a"), materials::Portal::create(Vector3::new(1.0, 1.0, 1.0), portal_a_pos, portal_b_pos));
-    materials.insert(String::from("portal_b"), materials::Portal::create(Vector3::new(1.0, 1.0, 1.0), portal_b_pos, portal_a_pos));
-
-    //Create objects
-    let mut objects:Vec<Object> = Vec::new();
-
-    objects.push(objects::Sphere::create(Vector3::new(0.0, 1.0, 0.0), 1.0, *materials.get(&String::from("emission_1")).unwrap_or(&base) ));
-    objects.push(objects::Sphere::create(Vector3::new(2.0, 1.0, 0.0), 1.0, *materials.get(&String::from("diffuse_white")).unwrap_or(&base) ));
-/*
-    //Glass
-    objects.push(objects::Sphere::create(Vector3::new(0.0, 1.0, 2.0), 1.0, *map.get(&String::from("glass_diamond")).unwrap_or(&base) ));
-    objects.push(objects::Sphere::create(Vector3::new(4.0, 1.0, 2.0), 1.0, *map.get(&String::from("glass_glass")).unwrap_or(&base) ));
-    objects.push(objects::Sphere::create(Vector3::new(-1.5, 0.5, 5.2), 0.5, *map.get(&String::from("glass_glass")).unwrap_or(&base) ));
-    //Metal
-    objects.push(objects::Sphere::create(Vector3::new(-2.5, 1.5, 0.0), 1.5, *map.get(&String::from("metal_red_fuzz")).unwrap_or(&base) ));
-    objects.push(objects::Sphere::create(Vector3::new(2.5, 1.0, 4.0), 1.0, *map.get(&String::from("metal_red_fuzz")).unwrap_or(&base) ));
-    objects.push(objects::Sphere::create(Vector3::new(-0.5, 1.0, 4.0), 1.0, *map.get(&String::from("metal_silver")).unwrap_or(&base) ));
-*/
-    /////////Version Diffuse
-    //Glass
-    //objects.push(objects::Sphere::create(Vector3::new(0.0, 1.0, 2.0), 1.0, *map.get(&String::from("glass_diamond")).unwrap_or(&base) ));
-    objects.push(objects::Sphere::create(Vector3::new(4.0, 1.0, 2.0), 1.0, *materials.get(&String::from("diffuse_red")).unwrap_or(&base) ));
-    objects.push(objects::Sphere::create(Vector3::new(-1.5, 0.5, 5.2), 0.5, *materials.get(&String::from("diffuse_white")).unwrap_or(&base) ));
-    //Metal
-    objects.push(objects::Sphere::create(Vector3::new(-2.5, 1.5, 0.0), 1.5, *materials.get(&String::from("diffuse_white")).unwrap_or(&base) ));
-    objects.push(objects::Sphere::create(Vector3::new(2.5, 1.0, 4.0), 1.0, *materials.get(&String::from("metal_red_fuzz")).unwrap_or(&base) ));
-    objects.push(objects::Sphere::create(Vector3::new(-0.5, 1.0, 4.0), 1.0, *materials.get(&String::from("metal_silver")).unwrap_or(&base) ));
-    
-    objects.push(objects::Sphere::create(Vector3::new(0.0, -50.0, 0.0), 50.0, *materials.get(&String::from("metal_silver")).unwrap_or(&base) ));
-    //objects.push(objects::Sphere::create(Vector3::new(0.0, 0.0, 0.0), 10.0, (materials[3]) ));
-
-    //Emission
-    objects.push(objects::Sphere::create(Vector3::new(-3.0, 10.0, 0.0), 5.0, *materials.get(&String::from("emission_2")).unwrap_or(&base) ));
-    objects.push(objects::Sphere::create(Vector3::new(3.0, 10.0, 0.0), 5.0, *materials.get(&String::from("emission_3")).unwrap_or(&base) ));
-
-    //Portals
-    objects.push(objects::Sphere::create(portal_a_pos, 1.0, *materials.get(&String::from("portal_a")).unwrap_or(&base) ));
-    objects.push(objects::Sphere::create(portal_b_pos, 1.0, *materials.get(&String::from("portal_b")).unwrap_or(&base) ));
-
-    //Create lights
-    let mut lights:Vec<Light> = Vec::new();
-    lights.push(lights::PointLight::create(Vector3::new(0.0, 5.0, -4.0), Vector3::new(1.0, 0.0, 0.0)));
-    lights.push(lights::PointLight::create(Vector3::new(0.0, 5.0, 0.0), Vector3::new(0.0, 1.0, 0.0)));
-    lights.push(lights::PointLight::create(Vector3::new(0.0, 5.0, 4.0), Vector3::new(0.0, 0.0, 1.0)));
-
-    let gradient_light_1 = Vector3::new(0.67, 0.84, 0.97);
-    //let gradient_light_2 = Vector3::new(0.63, 0.74, 0.90);
-    let gradient_light_2 = Vector3::new(0.3, 0.3, 0.3);
-
-    return Scene{
-        main_camera,
-        objects,
-        lights,
-        gradient_light_1,
-        gradient_light_2,
-        materials,
-    };
 }

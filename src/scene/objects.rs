@@ -33,4 +33,8 @@ impl Sphere{
                         },*/
                 };
         }
+
+        pub fn create_sphere(position:Vector3, radius:f64) -> Sphere{
+                return Sphere { position, radius, };
+        }
 }

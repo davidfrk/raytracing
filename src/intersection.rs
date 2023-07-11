@@ -26,10 +26,17 @@ pub struct HitData<'a>{
 	pub object:&'a Object,
 }
 
-pub fn raycast<'a>(scene:&'a Scene, ray:&'a Ray) -> Hit<'a>{
-	let mut closest_hit = Hit::Nothing;
-	let mut closest_distance = std::f64::MAX;
+fn test(scene:&Scene) -> bool{
+	return scene.objects.len() == scene.spheres.len();
+}
 
+pub fn raycast<'a>(scene:&'a Scene, ray:&'a Ray) -> Hit<'a>{
+	//let mut closest_hit = Hit::Nothing;
+	let mut closest_distance = std::f64::MAX;
+	let mut closest_id: i32 = -1;
+
+	//assert!(test(scene), "Different number of spheres and objects");
+	/*
 	for obj in &scene.objects{
 		let hit = obj.intersection(ray);
 		
@@ -41,21 +48,28 @@ pub fn raycast<'a>(scene:&'a Scene, ray:&'a Ray) -> Hit<'a>{
 					closest_distance = hit_data.distance;
 					closest_hit = hit;
 				}
-				/*
-				match closest_hit{
-					Hit::Nothing => {closest_hit = hit;},
-					Hit::Something(ref closest_hit_data) => {
-						if hit_data.distance < closest_hit_data.distance {
-							closest_hit = hit;
-						}
-					},
-				}
-				*/
 			},
 		}
 	}
 
 	return closest_hit;
+	*/
+	
+	for i in 0..scene.spheres.len() {
+		let distance = scene.spheres[i].intersection_distance(ray);
+
+		if distance < closest_distance {
+			closest_distance = distance;
+			closest_id = i as i32;
+		}
+	}
+
+	if closest_id >= 0 {
+		let id = closest_id as usize;
+		return scene.spheres[id].get_hit_data(&scene.objects[id], closest_distance, ray);
+	}
+	
+	return Hit::Nothing;
 }
 
 impl Object{
@@ -70,7 +84,7 @@ impl Object{
 
 
 impl Sphere{
-	fn intersection<'a>(&self, object:&'a Object, ray:&Ray) -> Hit<'a>{
+	pub fn intersection<'a>(&self, object:&'a Object, ray:&Ray) -> Hit<'a>{
 			let origin_to_center = self.position - ray.origin;
 			let proj_length = origin_to_center.dot(&ray.direction);
 
@@ -116,5 +130,59 @@ impl Sphere{
 			}
 
 			return Hit::Nothing;
+	}
+
+	pub fn intersection_distance(&self, ray:&Ray) -> f64{
+		let origin_to_center = self.position - ray.origin;
+		let proj_length = origin_to_center.dot(&ray.direction);
+
+		//Test if sphere is in the opposite direction of ray.
+		let square_distance_sphere_origin = origin_to_center.norm_squared();
+		let square_radius = self.radius*self.radius;
+		if proj_length <= 0.0 && square_radius < square_distance_sphere_origin {return f64::MAX;}
+
+		let center_to_direction = origin_to_center - proj_length * ray.direction;
+		let square_distance = center_to_direction.norm_squared();
+
+		if square_distance <= square_radius{
+			let displacement = (square_radius - square_distance).sqrt();
+
+			//Points of intersection
+			//p1 = origin + (proj_length - displacement) * direction;
+			//p2 = origin + (proj_length + displacement) * direction;
+
+			//Distance from camera
+			let distance:f64;
+
+			//Finding if we are inside or outside the sphere and choosing adequate point
+			if proj_length > displacement{
+				distance = proj_length - displacement;
+			}else{
+				distance = proj_length + displacement;
+			}
+
+			//Distance from camera to surface
+			return distance;
+		}
+
+		return f64::MAX;
+	}
+
+	pub fn get_hit_data<'a>(&self, object:&'a Object, distance:f64, ray:&Ray) -> Hit<'a> {
+		let point = ray.origin + distance * ray.direction;
+		let norm = (point - self.position).normalize();
+
+		//Deciding if ray started from inside
+		let to_origin = ray.origin - self.position;
+		let proj = to_origin.dot(&to_origin);
+		let inside = proj < self.radius * self.radius;
+
+		return Hit::Something(HitData{
+			point:point,
+			norm:norm,
+			inside:inside,
+			distance:distance,
+			object:object,
+		});
 	}
 }

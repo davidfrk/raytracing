@@ -8,10 +8,10 @@ mod intersection;
 mod animation;
 mod vector3;
 
-use std::time::{Instant};
+use std::time::Instant;
 
 fn main() {
-    let window = window::Window{width:200, height:200,};
+    let window = window::Window{width:800, height:800,};
     let mut main_scene = scene::load_scene();
     let now = Instant::now();
 
