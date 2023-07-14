@@ -14,6 +14,8 @@ pub mod raytracing_config;
 use std::sync::{Arc, Mutex};
 use rayon::prelude::*;
 
+extern crate oidn;
+
 pub fn render(scene:&Scene, width:u32, height:u32, raytracing_config:raytracing_config::RaytracingConfig) -> RgbImage{
     //ImageBuffer<Rgb<u8>, Vec<u8>>
     let arc_img = Arc::new(Mutex::new(ImageBuffer::<Rgb<u8>, Vec<u8>>::new(width, height)));
@@ -130,7 +132,65 @@ pub fn render(scene:&Scene, width:u32, height:u32, raytracing_config:raytracing_
     }
 
     let img = &*arc_img.lock().unwrap();
-    return img.clone();
+    let mut final_image = img.clone();
+
+    if raytracing_config.denoise{
+        denoise(&mut final_image);
+    }
+    
+    return final_image;
+}
+
+fn denoise(img: &mut ImageBuffer::<Rgb<u8>, Vec<u8>>){
+    let (width, height) = img.dimensions();
+    let num_pixels = (width * height) as usize;
+    let mut converted_pixels: Vec<f32> = Vec::with_capacity(num_pixels * 3); // 3 channels (R, G, B) per pixel
+
+    for pixel in img.pixels() {
+        let r = pixel[0] as f32;
+        let g = pixel[1] as f32;
+        let b = pixel[2] as f32;
+
+        converted_pixels.push(r / 255.0_f32);
+        converted_pixels.push(g / 255.0_f32);
+        converted_pixels.push(b / 255.0_f32);
+    }
+    // Ensure the capacity matches the actual number of converted pixels
+    converted_pixels.shrink_to_fit();
+
+    let mut filter_output = vec![0.0f32; converted_pixels.len()];
+    
+    let device = oidn::Device::new();
+    
+    let mut filter = oidn::RayTracing::new(&device);
+    
+    filter
+        //.srgb(true)
+        .image_dimensions(width as usize, height as usize);
+        //.input_scale(1.0_f32);
+    
+    filter
+        .filter(&converted_pixels[..], &mut filter_output[..])
+        .expect("Invalid input image dimensions?");
+    
+
+    if let Err(e) = device.get_error() {
+        println!("Error denosing image: {}", e.1);
+    }
+
+    //To do, transfer filter_output back to img
+    for i in (0..filter_output.len()).filter(|x| (x % 3) == 0) {
+        let r = (filter_output[i] * 255.0_f32) as u8;
+        let g = (filter_output[i + 1] * 255.0_f32) as u8;
+        let b = (filter_output[i + 2] * 255.0_f32) as u8;
+
+        let rgb = image::Rgb([r, g, b]);
+
+        let pixel = i / 3;
+        let x = (pixel % width as usize) as u32;
+        let y = (pixel / width as usize) as u32;
+        img.put_pixel(x, y, rgb);
+    }
 }
 
 fn did_converge(last_color:&mut Vector3, color:& Vector3, last_update:&mut u32, current_count:u32, convergence_threshold:f64) -> bool{

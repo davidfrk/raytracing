@@ -12,4 +12,7 @@ pub struct RaytracingConfig{
 
 	//Parallelization properties
 	pub parallel:bool,
+
+	//Denoise
+	pub denoise:bool,
 }
