@@ -1,6 +1,6 @@
 # Raytracing with Rust
 
-Multicore ray tracing powered by rayon.
+Multicore ray tracing powered with rayon. Denoise included with Intel Open Denoiser.
 
 - [Images](#images)
 - [Animations](#animations)
