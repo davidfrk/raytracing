@@ -14,14 +14,30 @@ use crate::vector3::Vector3;
 
 static DISPLACEMENT_DISTANCE:f64 = 0.0000001;
 
-pub fn cast_ray(scene:&Scene, ray:&Ray, depth:u8) -> Vector3{
+pub fn cast_ray_with_normal_albedo(scene:&Scene, ray:&Ray, depth:u8, normal:&mut Vector3, albedo:&mut Vector3) -> Vector3{
 	let intersection = intersection::raycast(scene, ray);
 
 	match intersection{
 		Hit::Nothing => {
 			//Skybox
-			let t = ray.direction.y.abs(); //0.5 * (ray.direction.y + 1.0);
-			return t * scene.gradient_light_1 + (1.0 - t) * scene.gradient_light_2;
+			*normal = ray.direction;
+			*albedo = skybox(scene, ray);
+			return *albedo;
+		},
+		Hit::Something(ref hit_data) => {
+			*normal = hit_data.norm;
+			*albedo = hit_data.object.material.attenuation();
+			return compute_indirect_illumination(scene, ray, &hit_data, depth);
+		},
+	}
+}
+
+pub fn cast_ray(scene:&Scene, ray:&Ray, depth:u8) -> Vector3{
+	let intersection = intersection::raycast(scene, ray);
+
+	match intersection{
+		Hit::Nothing => {
+			return skybox(scene, ray);
 		},
 		Hit::Something(ref hit_data) => {
 			return //color_mult(&scene.ambient_light, &hit_data.object.material.color)
@@ -30,6 +46,11 @@ pub fn cast_ray(scene:&Scene, ray:&Ray, depth:u8) -> Vector3{
 				compute_indirect_illumination(scene, ray, &hit_data, depth);
 		},
 	}
+}
+
+fn skybox(scene:&Scene, ray:&Ray) -> Vector3{
+	let t = ray.direction.y.abs(); //0.5 * (ray.direction.y + 1.0);
+	return t * scene.gradient_light_1 + (1.0 - t) * scene.gradient_light_2;
 }
 
 fn compute_direct_illumination(scene:&Scene, direction:&Vector3, hit_data:&HitData) -> Vector3{

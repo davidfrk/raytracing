@@ -10,15 +10,18 @@ use crate::intersection::Ray;
 
 mod raytracing;
 pub mod raytracing_config;
+use raytracing_config::RaytracingConfig;
 
 use std::sync::{Arc, Mutex};
 use rayon::prelude::*;
 
 extern crate oidn;
 
-pub fn render(scene:&Scene, width:u32, height:u32, raytracing_config:raytracing_config::RaytracingConfig) -> RgbImage{
+pub fn render(scene:&Scene, width:u32, height:u32, raytracing_config:RaytracingConfig) -> RgbImage{
     //ImageBuffer<Rgb<u8>, Vec<u8>>
     let arc_img = Arc::new(Mutex::new(ImageBuffer::<Rgb<f32>, Vec<f32>>::new(width, height)));
+    let arc_normal = Arc::new(Mutex::new(ImageBuffer::<Rgb<f32>, Vec<f32>>::new(width, height)));
+    let arc_albedo = Arc::new(Mutex::new(ImageBuffer::<Rgb<f32>, Vec<f32>>::new(width, height)));
 
     //Get camera focus and blur
     let focus_distance = scene.main_camera.focus_dist;
@@ -37,11 +40,14 @@ pub fn render(scene:&Scene, width:u32, height:u32, raytracing_config:raytracing_
 
     fn render_line(pixel_y:u32, height: u32, width: u32, origin: Vector3, forward: Vector3, right: Vector3, up: Vector3,
         camera_width: f64, camera_height: f64, focus_distance: f64, focus_blur: f64, scene: &Scene,
-        raytracing_config:raytracing_config::RaytracingConfig, img: &Arc<Mutex<ImageBuffer<Rgb<f32>, Vec<f32>>>>){
+        raytracing_config:RaytracingConfig, img: &Arc<Mutex<ImageBuffer<Rgb<f32>, Vec<f32>>>>,
+        normals: &Arc<Mutex<ImageBuffer<Rgb<f32>, Vec<f32>>>>, albedos: &Arc<Mutex<ImageBuffer<Rgb<f32>, Vec<f32>>>>){
         
         let mut rng = rand::thread_rng();
         for pixel_x in 0..width{
-            let mut color = Vector3::new(0.0, 0.0, 0.0);
+            let mut color:Vector3 = Vector3::new(0.0, 0.0, 0.0);
+            let mut normal:Vector3 = Vector3::default();
+            let mut albedo:Vector3 = Vector3::default();
             
             //attention to detail algorithm
             let mut prev_color = color;
@@ -90,12 +96,21 @@ pub fn render(scene:&Scene, width:u32, height:u32, raytracing_config:raytracing_
                 };
 
                 //Cast Ray
-                color += raytracing::cast_ray(&scene, &ray, raytracing_config.ray_bounce_max_depth);
+                //color += raytracing::cast_ray(&scene, &ray, raytracing_config.ray_bounce_max_depth);
+
+                let mut new_normal:Vector3 = Vector3::default();
+                let mut new_albedo:Vector3 = Vector3::default();
+                color += raytracing::cast_ray_with_normal_albedo(&scene, &ray, raytracing_config.ray_bounce_max_depth, &mut new_normal, &mut new_albedo);
+                normal += new_normal;
+                albedo += new_albedo;
+
                 current_ray_count+= 1; //attention to detail algorithm
             }
 
-            color = 1.0 / current_ray_count as f64 * color; // attention to detail algorithm
             //color = 1.0 / rays_per_pixel as f64 * color; // fixed ray count per pixel
+            color = 1.0 / current_ray_count as f64 * color; // attention to detail algorithm
+            normal = 1.0 / current_ray_count as f64 * normal;
+            albedo = 1.0 / current_ray_count as f64 * albedo;
 
             //Gamma correction and clamp
             color = raytracing_config.exposure * color;
@@ -109,8 +124,12 @@ pub fn render(scene:&Scene, width:u32, height:u32, raytracing_config:raytracing_
             //let b = (color.z * 255.0).floor() as u8;
             //let rgb = image::Rgb([r, g, b]);
             let rgb = image::Rgb([color.x as f32, color.y as f32, color.z as f32]);
+            let normal_rgb = image::Rgb([normal.x as f32, normal.y as f32, normal.z as f32]);
+            let albedo_rgb = image::Rgb([albedo.x as f32, albedo.y as f32, albedo.z as f32]);
             
             img.lock().unwrap().put_pixel(pixel_x, pixel_y, rgb);
+            normals.lock().unwrap().put_pixel(pixel_x, pixel_y, normal_rgb);
+            albedos.lock().unwrap().put_pixel(pixel_x, pixel_y, albedo_rgb);
         }
         if pixel_y % 50 == 0 {
             println!("Line: {}", pixel_y);
@@ -121,11 +140,11 @@ pub fn render(scene:&Scene, width:u32, height:u32, raytracing_config:raytracing_
     if raytracing_config.parallel{
         //Render in parallel with rayon
         (0..height).into_par_iter().for_each( | line | render_line(line, height, width, origin, forward, right, up, camera_width, camera_height,
-            focus_distance, focus_blur, scene, raytracing_config, &arc_img));
+            focus_distance, focus_blur, scene, raytracing_config, &arc_img, &arc_normal, &arc_albedo));
     }else{
         for line in 0..height{
             render_line(line, height, width, origin, forward, right, up, camera_width, camera_height,
-                focus_distance, focus_blur, scene, raytracing_config, &arc_img);
+                focus_distance, focus_blur, scene, raytracing_config, &arc_img, &arc_normal, &arc_albedo);
         }
     }
 
@@ -133,24 +152,48 @@ pub fn render(scene:&Scene, width:u32, height:u32, raytracing_config:raytracing_
     let mut final_image = img.clone();
 
     if raytracing_config.denoise{
-        denoise(&mut final_image);
+        let normals = (&*arc_normal.lock().unwrap()).clone();
+        let albedos = (&*arc_albedo.lock().unwrap()).clone();
+
+        to_rgb(&normals).save("normal.png").unwrap();
+        to_rgb(&albedos).save("albedo.png").unwrap();
+
+        denoise(&mut final_image, normals, albedos, raytracing_config);
     }
     
-    return to_rgb(final_image);
+    return to_rgb(&final_image);
 }
 
-fn denoise(img: &mut ImageBuffer::<Rgb<f32>, Vec<f32>>){
+fn denoise(img: &mut ImageBuffer::<Rgb<f32>, Vec<f32>>, normal: ImageBuffer::<Rgb<f32>, Vec<f32>>, albedo: ImageBuffer::<Rgb<f32>, Vec<f32>>, raytracing_config: RaytracingConfig){
     let (width, height) = img.dimensions();
     let num_pixels = (width * height) as usize;
+
     let mut converted_pixels: Vec<f32> = Vec::with_capacity(num_pixels * 3); // 3 channels (R, G, B) per pixel
+    let mut converted_normals: Vec<f32> = Vec::with_capacity(num_pixels * 3);
+    let mut converted_albedos: Vec<f32> = Vec::with_capacity(num_pixels * 3);
 
     for pixel in img.pixels() {
         converted_pixels.push(pixel[0]);
         converted_pixels.push(pixel[1]);
         converted_pixels.push(pixel[2]);
     }
+
+    for pixel in normal.pixels() {
+        converted_normals.push(pixel[0]);
+        converted_normals.push(pixel[1]);
+        converted_normals.push(pixel[2]);
+    }
+
+    for pixel in albedo.pixels() {
+        converted_albedos.push(pixel[0]);
+        converted_albedos.push(pixel[1]);
+        converted_albedos.push(pixel[2]);
+    }
+
     // Ensure the capacity matches the actual number of converted pixels
     converted_pixels.shrink_to_fit();
+    converted_normals.shrink_to_fit();
+    converted_albedos.shrink_to_fit();
 
     let mut filter_output = vec![0.0f32; converted_pixels.len()];
     
@@ -162,6 +205,10 @@ fn denoise(img: &mut ImageBuffer::<Rgb<f32>, Vec<f32>>){
         //.srgb(true)
         .image_dimensions(width as usize, height as usize);
         //.input_scale(1.0_f32);
+
+    if raytracing_config.denoise_with_normals{
+        filter.albedo_normal(&converted_albedos, &converted_normals);
+    }
     
     filter
         .filter(&converted_pixels[..], &mut filter_output[..])
@@ -183,7 +230,7 @@ fn denoise(img: &mut ImageBuffer::<Rgb<f32>, Vec<f32>>){
     }
 }
 
-fn to_rgb(img: ImageBuffer::<Rgb<f32>, Vec<f32>>) -> ImageBuffer::<Rgb<u8>, Vec<u8>>{
+fn to_rgb(img: &ImageBuffer::<Rgb<f32>, Vec<f32>>) -> ImageBuffer::<Rgb<u8>, Vec<u8>>{
     let mut rgb_image = ImageBuffer::<Rgb<u8>, Vec<u8>>::new(img.width(), img.height());
 
     for y in 0..img.height(){

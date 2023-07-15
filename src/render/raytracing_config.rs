@@ -15,4 +15,5 @@ pub struct RaytracingConfig{
 
 	//Denoise
 	pub denoise:bool,
+	pub denoise_with_normals:bool,
 }

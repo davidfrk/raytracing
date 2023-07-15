@@ -16,7 +16,8 @@ fn main() {
     let now = Instant::now();
 
     let raytracing_config = render::raytracing_config::RaytracingConfig{
-        exposure:1.0, gamma:2.2, rays_per_pixel:0, ray_bounce_max_depth:12, convergence_threshold:0.002, parallel:true, denoise:true};
+        exposure:1.0, gamma:2.2, rays_per_pixel:0, ray_bounce_max_depth:12, convergence_threshold:0.2, 
+        parallel:true, denoise:true, denoise_with_normals:true};
 
     pub enum RenderOption{
         Image,
