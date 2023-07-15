@@ -27,7 +27,10 @@ pub fn cast_ray_with_normal_albedo(scene:&Scene, ray:&Ray, depth:u8, normal:&mut
 		Hit::Something(ref hit_data) => {
 			*normal = hit_data.norm;
 			*albedo = hit_data.object.material.attenuation();
-			return compute_indirect_illumination(scene, ray, &hit_data, depth);
+			return //color_mult(&scene.ambient_light, &hit_data.object.material.color)
+				//hit_data.object.material.emission
+				compute_direct_illumination(scene, &ray.direction, &hit_data) +
+				compute_indirect_illumination(scene, ray, &hit_data, depth);
 		},
 	}
 }
@@ -42,7 +45,7 @@ pub fn cast_ray(scene:&Scene, ray:&Ray, depth:u8) -> Vector3{
 		Hit::Something(ref hit_data) => {
 			return //color_mult(&scene.ambient_light, &hit_data.object.material.color)
 				//hit_data.object.material.emission
-				//compute_direct_illumination(scene, &ray.direction, &hit_data) +
+				compute_direct_illumination(scene, &ray.direction, &hit_data) +
 				compute_indirect_illumination(scene, ray, &hit_data, depth);
 		},
 	}

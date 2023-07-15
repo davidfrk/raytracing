@@ -15,6 +15,7 @@ use materials::Material;
 //extern crate nalgebra as na;
 //use na::Vector3;
 use crate::vector3::Vector3;
+const PI: f64 = 3.14159;
 
 pub fn render_blur_transition(window:&Window, raytracing_config:RaytracingConfig, scene:&mut Scene, frames:u32, focus_dist_start:f64, focus_dist_end:f64, focus_blur_start:f64, focus_blur_end:f64){
 	for i in 0..frames{
@@ -82,6 +83,31 @@ pub fn render_metal_fuzz_animation(window:&Window, raytracing_config:RaytracingC
 		img.save(generate_file_name(i + starting_frame) ).unwrap();
 
 		println!("Frame: {}", (i + starting_frame).to_string());
+	}
+}
+
+pub fn render_light_tunnel_animation(window:&Window, raytracing_config:RaytracingConfig, scene:&mut Scene, starting_frame:u32, frames:u32,
+		 oscilation_speed:f64, oscilation_size:f64, cam_start:Vector3, cam_end:Vector3, starting_obj_id:usize){
+	
+	let distance = oscilation_size + 5.0;// + oscilation_size / 2.0;
+
+	for i in starting_frame..frames{
+		let time = i as f64 / frames as f64;
+		let displacement = (time * PI * oscilation_speed).cos() * oscilation_size;
+
+		for obj_id in starting_obj_id..scene.objects.len(){
+			if obj_id % 2 == 0{
+				scene.spheres[obj_id].position.z = displacement + distance;
+			} else {
+				scene.spheres[obj_id].position.z = - displacement - distance;
+			}
+		}
+
+		//Render image
+		let img = render::render(scene, window.width, window.height, raytracing_config);
+		img.save(generate_file_name(i)).unwrap();
+
+		println!("Frame: {}", i.to_string());
 	}
 }
 
