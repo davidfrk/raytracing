@@ -18,8 +18,7 @@ extern crate oidn;
 
 pub fn render(scene:&Scene, width:u32, height:u32, raytracing_config:raytracing_config::RaytracingConfig) -> RgbImage{
     //ImageBuffer<Rgb<u8>, Vec<u8>>
-    let arc_img = Arc::new(Mutex::new(ImageBuffer::<Rgb<u8>, Vec<u8>>::new(width, height)));
-    //let img:RgbImage = ImageBuffer::new(width, height);
+    let arc_img = Arc::new(Mutex::new(ImageBuffer::<Rgb<f32>, Vec<f32>>::new(width, height)));
 
     //Get camera focus and blur
     let focus_distance = scene.main_camera.focus_dist;
@@ -36,11 +35,9 @@ pub fn render(scene:&Scene, width:u32, height:u32, raytracing_config:raytracing_
     let right = scene.main_camera.right;
     let up = scene.main_camera.up;
 
-    //let mut rng = rand::thread_rng();
-
     fn render_line(pixel_y:u32, height: u32, width: u32, origin: Vector3, forward: Vector3, right: Vector3, up: Vector3,
         camera_width: f64, camera_height: f64, focus_distance: f64, focus_blur: f64, scene: &Scene,
-        raytracing_config:raytracing_config::RaytracingConfig, img: &Arc<Mutex<ImageBuffer<Rgb<u8>, Vec<u8>>>>){
+        raytracing_config:raytracing_config::RaytracingConfig, img: &Arc<Mutex<ImageBuffer<Rgb<f32>, Vec<f32>>>>){
         
         let mut rng = rand::thread_rng();
         for pixel_x in 0..width{
@@ -107,10 +104,11 @@ pub fn render(scene:&Scene, width:u32, height:u32, raytracing_config:raytracing_
             color.z = (f64::powf(color.z, raytracing_config.gamma)).clamp(0.0, 1.0);
 
             //Writing pixel
-            let r = (color.x * 255.0).floor() as u8;
-            let g = (color.y * 255.0).floor() as u8;
-            let b = (color.z * 255.0).floor() as u8;
-            let rgb = image::Rgb([r, g, b]);
+            //let r = (color.x * 255.0).floor() as u8;
+            //let g = (color.y * 255.0).floor() as u8;
+            //let b = (color.z * 255.0).floor() as u8;
+            //let rgb = image::Rgb([r, g, b]);
+            let rgb = image::Rgb([color.x as f32, color.y as f32, color.z as f32]);
             
             img.lock().unwrap().put_pixel(pixel_x, pixel_y, rgb);
         }
@@ -138,22 +136,18 @@ pub fn render(scene:&Scene, width:u32, height:u32, raytracing_config:raytracing_
         denoise(&mut final_image);
     }
     
-    return final_image;
+    return to_rgb(final_image);
 }
 
-fn denoise(img: &mut ImageBuffer::<Rgb<u8>, Vec<u8>>){
+fn denoise(img: &mut ImageBuffer::<Rgb<f32>, Vec<f32>>){
     let (width, height) = img.dimensions();
     let num_pixels = (width * height) as usize;
     let mut converted_pixels: Vec<f32> = Vec::with_capacity(num_pixels * 3); // 3 channels (R, G, B) per pixel
 
     for pixel in img.pixels() {
-        let r = pixel[0] as f32;
-        let g = pixel[1] as f32;
-        let b = pixel[2] as f32;
-
-        converted_pixels.push(r / 255.0_f32);
-        converted_pixels.push(g / 255.0_f32);
-        converted_pixels.push(b / 255.0_f32);
+        converted_pixels.push(pixel[0]);
+        converted_pixels.push(pixel[1]);
+        converted_pixels.push(pixel[2]);
     }
     // Ensure the capacity matches the actual number of converted pixels
     converted_pixels.shrink_to_fit();
@@ -180,17 +174,32 @@ fn denoise(img: &mut ImageBuffer::<Rgb<u8>, Vec<u8>>){
 
     //To do, transfer filter_output back to img
     for i in (0..filter_output.len()).filter(|x| (x % 3) == 0) {
-        let r = (filter_output[i] * 255.0_f32) as u8;
-        let g = (filter_output[i + 1] * 255.0_f32) as u8;
-        let b = (filter_output[i + 2] * 255.0_f32) as u8;
-
-        let rgb = image::Rgb([r, g, b]);
+        let rgb = image::Rgb([filter_output[i], filter_output[i + 1], filter_output[i + 2]]);
 
         let pixel = i / 3;
         let x = (pixel % width as usize) as u32;
         let y = (pixel / width as usize) as u32;
         img.put_pixel(x, y, rgb);
     }
+}
+
+fn to_rgb(img: ImageBuffer::<Rgb<f32>, Vec<f32>>) -> ImageBuffer::<Rgb<u8>, Vec<u8>>{
+    let mut rgb_image = ImageBuffer::<Rgb<u8>, Vec<u8>>::new(img.width(), img.height());
+
+    for y in 0..img.height(){
+        for x in 0..img.width(){
+            let pixel = img.get_pixel(x, y);
+
+            let r = (pixel[0] * 255.0).floor() as u8;
+            let g = (pixel[1] * 255.0).floor() as u8;
+            let b = (pixel[2] * 255.0).floor() as u8;
+            let rgb = image::Rgb([r, g, b]);
+
+            rgb_image.put_pixel(x, y, rgb);
+        }
+    }
+
+    return rgb_image;
 }
 
 fn did_converge(last_color:&mut Vector3, color:& Vector3, last_update:&mut u32, current_count:u32, convergence_threshold:f64) -> bool{
