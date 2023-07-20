@@ -25,6 +25,9 @@ pub struct Emission{
 #[derive(Copy, Clone)]
 pub struct Diffuse{
         pub color:Vector3,
+        pub specular_color:Vector3,
+        pub specular_exp:f64,
+        pub shininess:f64
 }
 
 #[derive(Copy, Clone)]
@@ -50,19 +53,39 @@ impl Material{
         pub fn attenuation(&self) -> Vector3{
                 match *self{
                         Material::Emission(ref m) => {
-                                return m.color; //Vector3::new(0.0, 0.0, 0.0);
+                                return m.attenuation(); //Vector3::new(0.0, 0.0, 0.0);
                         },
                         Material::Diffuse(ref m) => {
-                                return m.color;
+                                return m.attenuation();
                         },
                         Material::Metal(ref m) => {
-                                return m.color;
+                                return m.attenuation();
                         },
                         Material::Glass(ref m) => {
-                                return m.color;
+                                return m.attenuation();
                         },
                         Material::Portal(ref m) => {
-                                return m.color;
+                                return m.attenuation();
+                        },
+                }
+        }
+
+        pub fn specular(&self, light_dir:&Vector3, norm:&Vector3, vision_dir:&Vector3) -> Vector3{
+                match *self{
+                        Material::Emission(ref m) => {
+                                return Vector3::new(0.0, 0.0, 0.0);
+                        },
+                        Material::Diffuse(ref m) => {
+                                return m.specular(light_dir, norm, vision_dir);
+                        },
+                        Material::Metal(ref m) => {
+                                return Vector3::new(0.0, 0.0, 0.0);
+                        },
+                        Material::Glass(ref m) => {
+                                return Vector3::new(0.0, 0.0, 0.0);
+                        },
+                        Material::Portal(ref m) => {
+                                return Vector3::new(0.0, 0.0, 0.0);
                         },
                 }
         }
@@ -101,9 +124,9 @@ impl Emission{
                 })
         }
 
-        pub fn scatter(&self, dir_in:&Vector3, hit_data:&HitData, out:&mut Ray) -> bool{
-                return scatter_diffuse(dir_in, hit_data, &mut out.direction);
-        }
+        //pub fn scatter(&self, dir_in:&Vector3, hit_data:&HitData, out:&mut Ray) -> bool{
+        //        return scatter_diffuse(dir_in, hit_data, &mut out.direction);
+        //}
 }
 
 impl Scatterable for Emission{
@@ -120,10 +143,38 @@ impl Diffuse{
         pub const fn create(color:Vector3) -> Material{
                 Material::Diffuse(Diffuse{
                         color,
+                        specular_color: Vector3::new(0.5, 0.5, 0.5),
+                        specular_exp: 100.0,
+                        shininess: 0.1
                 })
         }
 
-        pub fn scatter(&self, dir_in:&Vector3, hit_data:&HitData, out:&mut Ray) -> bool{
+        pub fn specular(&self, light_dir:&Vector3, norm:&Vector3, vision_dir:&Vector3) -> Vector3{
+                
+
+                let vision_reflected = vision_dir.reflect(norm);
+                let mut specular_attenuation = light_dir.dot(&vision_reflected);
+
+                if specular_attenuation > 0.0{
+                        specular_attenuation = specular_attenuation.powf(self.shininess) + specular_attenuation.powf(self.specular_exp);
+                        return specular_attenuation * self.specular_color;
+                }
+                
+                return Vector3::new(0.0, 0.0, 0.0);
+        }
+
+        //pub fn scatter(&self, dir_in:&Vector3, hit_data:&HitData, out:&mut Ray) -> bool{
+        //        return scatter_diffuse(dir_in, hit_data, &mut out.direction);
+        //}
+        
+}
+
+impl Scatterable for Diffuse{
+        fn attenuation(&self) -> Vector3{
+                return self.color;
+        }
+
+        fn scatter(&self, dir_in:&Vector3, hit_data:&HitData, out:&mut Ray) -> bool{
                 return scatter_diffuse(dir_in, hit_data, &mut out.direction);
         }
 }
@@ -138,12 +189,22 @@ impl Metal{
                 })
         }
 
-        pub fn scatter(&self, dir_in:&Vector3, hit_data:&HitData, out:&mut Ray) -> bool{
-                return scatter_metal(dir_in, hit_data, self.fuzz, &mut out.direction);
-        }
+        //pub fn scatter(&self, dir_in:&Vector3, hit_data:&HitData, out:&mut Ray) -> bool{
+        //        return scatter_metal(dir_in, hit_data, self.fuzz, &mut out.direction);
+        //}
 
         pub fn set_fuzz(&mut self, fuzz:f64){
                 self.fuzz = fuzz;
+        }
+}
+
+impl Scatterable for Metal{
+        fn attenuation(&self) -> Vector3{
+                return self.color;
+        }
+
+        fn scatter(&self, dir_in:&Vector3, hit_data:&HitData, out:&mut Ray) -> bool{
+                return scatter_metal(dir_in, hit_data, self.fuzz, &mut out.direction);
         }
 }
 
@@ -155,7 +216,17 @@ impl Glass{
                 })
         }
 
-        pub fn scatter(&self, dir_in:&Vector3, hit_data:&HitData, out:&mut Ray) -> bool{
+        //pub fn scatter(&self, dir_in:&Vector3, hit_data:&HitData, out:&mut Ray) -> bool{
+        //        return scatter_glass(dir_in, hit_data, self.refraction, &mut out.direction);
+        //}
+}
+
+impl Scatterable for Glass{
+        fn attenuation(&self) -> Vector3{
+                return self.color;
+        }
+
+        fn scatter(&self, dir_in:&Vector3, hit_data:&HitData, out:&mut Ray) -> bool{
                 return scatter_glass(dir_in, hit_data, self.refraction, &mut out.direction);
         }
 }
@@ -169,7 +240,29 @@ impl Portal{
                 })
         }
 
-        pub fn scatter(&self, dir_in:&Vector3, hit_data:&HitData, out:&mut Ray) -> bool{
+        //pub fn scatter(&self, dir_in:&Vector3, hit_data:&HitData, out:&mut Ray) -> bool{
+        //        //Creating portal border
+        //        if dir_in.dot(&hit_data.norm).abs() < 0.1{
+        //                return false;
+        //        }
+        //
+        //        if hit_data.inside {
+        //                out.origin = hit_data.point - self.position + self.target;// + 0.00001 * dir_in;
+        //                out.direction = *dir_in;
+        //        }else{
+        //                out.origin = hit_data.point;// + 0.00001 * dir_in;
+        //                out.direction = *dir_in;
+        //        }
+        //        return true;
+        //}
+}
+
+impl Scatterable for Portal{
+        fn attenuation(&self) -> Vector3{
+                return self.color;
+        }
+
+        fn scatter(&self, dir_in:&Vector3, hit_data:&HitData, out:&mut Ray) -> bool{
                 //Creating portal border
                 if dir_in.dot(&hit_data.norm).abs() < 0.1{
                         return false;

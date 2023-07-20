@@ -1,5 +1,4 @@
 #![allow(dead_code,unused_variables)]
-
 use crate::scene;
 use scene::Scene;
 use scene::materials::Material;
@@ -54,6 +53,7 @@ pub fn cast_ray(scene:&Scene, ray:&Ray, depth:u8) -> Vector3{
 fn skybox(scene:&Scene, ray:&Ray) -> Vector3{
 	let t = ray.direction.y.abs(); //0.5 * (ray.direction.y + 1.0);
 	return t * scene.gradient_light_1 + (1.0 - t) * scene.gradient_light_2;
+	//return Vector3::new(0.0,0.0,0.0);
 }
 
 fn compute_direct_illumination(scene:&Scene, direction:&Vector3, hit_data:&HitData) -> Vector3{
@@ -63,10 +63,11 @@ fn compute_direct_illumination(scene:&Scene, direction:&Vector3, hit_data:&HitDa
 		Material::Glass(_) | Material::Metal(_) | Material::Portal(_) => {
 			return color;
 		}
-		_ => {}
+		Material::Diffuse(_) | Material::Emission(_) => {/*continue*/}
 	}
 
 	let effective_norm:Vector3;
+	let vision_direction = -1.0 * direction;
 
 	if hit_data.inside{
 		//If they are in the same direction reflection/surface norm must be inverted.
@@ -95,19 +96,24 @@ fn compute_direct_illumination(scene:&Scene, direction:&Vector3, hit_data:&HitDa
 
 		let intersection = intersection::raycast(scene, &ray);
 
+		fn compute_color(material:&Material, light_color:Vector3, light_dir: &Vector3, effective_norm:&Vector3, direction: &Vector3) -> Vector3{
+			return /*cos.abs() * light_color.mult(&material.attenuation()) + */light_color.mult(&material.specular(light_dir, effective_norm, direction));
+		}
+
 		match intersection{
 			Hit::Nothing => {
-				color += cos.abs() * light.get_color();
+				//compute color probably needs -direction instead
+				color += compute_color(&hit_data.object.material, light.get_color(), &light_dir, &effective_norm, &direction);
 			},
 			Hit::Something(ref light_hit_data) => {
 				if light_hit_data.distance * light_hit_data.distance >= squared_light_distance{
-					color += cos.abs() * light.get_color();
+					color += compute_color(&hit_data.object.material, light.get_color(), &light_dir, &effective_norm, &direction);
 				}
 			},
 		}
 	}
 
-	color = color.mult(&hit_data.object.material.attenuation());
+	//color = color.mult(&hit_data.object.material.attenuation());
 	return color;
 }
 
@@ -132,7 +138,19 @@ fn compute_indirect_illumination(scene:&Scene, in_ray:&Ray, hit_data:&HitData, d
 
 			//The math is with effective_norm instead of norm, however, we do a cos.abs() anyway
 			//let cos = hit_data.norm.dot(&in_ray.direction);
-			color +=  /* cos.abs() * */  cast_ray(scene, &out_ray, depth - 1);
+			color =  /* cos.abs() * */  cast_ray(scene, &out_ray, depth - 1);
+
+			if let Material::Diffuse(m) = hit_data.object.material{
+
+				let effective_norm:Vector3;
+				if hit_data.inside{
+					effective_norm = -1.0 * hit_data.norm;
+				}else{
+					effective_norm = hit_data.norm;
+				}
+
+				color += color.mult(&m.specular(&out_ray.direction, &effective_norm, &in_ray.direction));
+			}
 		}
 
 		color = color.mult(&hit_data.object.material.attenuation());

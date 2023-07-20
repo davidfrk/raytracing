@@ -87,7 +87,7 @@ pub fn render_metal_fuzz_animation(window:&Window, raytracing_config:RaytracingC
 }
 
 pub fn render_light_tunnel_animation(window:&Window, raytracing_config:RaytracingConfig, scene:&mut Scene, starting_frame:u32, frames:u32,
-		 oscilation_speed:f64, oscilation_size:f64, cam_start:Vector3, cam_end:Vector3, starting_obj_id:usize){
+		 oscilation_speed:f64, oscilation_size:f64, _cam_start:Vector3, _cam_end:Vector3, starting_obj_id:usize){
 	
 	let distance = oscilation_size + 5.0;// + oscilation_size / 2.0;
 

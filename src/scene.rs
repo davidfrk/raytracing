@@ -192,7 +192,7 @@ pub fn load_scene_2() -> Scene{
     load_materials(&mut scene);
 
     //Create lights
-    scene.lights.push(lights::PointLight::create(Vector3::new(0.0, 5.0, 0.0), Vector3::new(1.0, 1.0, 1.0)));
+    scene.lights.push(lights::PointLight::create(Vector3::new(0.0, 5.0, 0.0), Vector3::new(0.5, 0.5, 0.5)));
     //scene.lights.push(lights::PointLight::create(Vector3::new(0.0, 5.0, 0.0), Vector3::new(0.0, 1.0, 0.0)));
     //scene.lights.push(lights::PointLight::create(Vector3::new(0.0, 5.0, 4.0), Vector3::new(0.0, 0.0, 1.0)));
 

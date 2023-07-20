@@ -56,6 +56,10 @@ impl Vector3{
 	pub fn is_near_zero(&self) -> bool{
 		return self.x.is_nan() || self.y.is_nan() || self.z.is_nan();
 	}
+
+	pub fn reflect(&self, norm:&Vector3) -> Vector3{
+		return self - 2.0 * self.dot(norm) * norm;
+	}
 }
 
 impl Default for Vector3{

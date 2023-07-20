@@ -53,7 +53,7 @@ fn main() {
         RenderOption::LightTunnelAnimation =>{
             let camera_starting_position = Vector3::new(60.0, 8.0, 0.0);
             let camera_final_position = Vector3::new(5.0, 8.0, 0.0);
-            animation::render_light_tunnel_animation(&window, raytracing_config, &mut main_scene, 0, 60,
+            animation::render_light_tunnel_animation(&window, raytracing_config, &mut main_scene, 20, 60,
                  2.0, 5.0, camera_starting_position, camera_final_position, 4)
         },
     }
