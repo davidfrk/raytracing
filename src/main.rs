@@ -51,10 +51,10 @@ fn main() {
             animation::render_metal_fuzz_animation(&window, raytracing_config, &mut main_scene, 10, 1, obj_id , 0.0, 0.0);
         },
         RenderOption::LightTunnelAnimation =>{
-            let camera_starting_position = Vector3::new(60.0, 8.0, 0.0);
-            let camera_final_position = Vector3::new(5.0, 8.0, 0.0);
-            animation::render_light_tunnel_animation(&window, raytracing_config, &mut main_scene, 20, 60,
-                 2.0, 5.0, camera_starting_position, camera_final_position, 4)
+            let camera_starting_position = Vector3::new(0.0, 5.0, 0.0);
+            let camera_final_position = Vector3::new(160.0, 5.0, 0.0);
+            animation::render_light_tunnel_animation(&window, raytracing_config, &mut main_scene, 60, 120,
+                 2.0, 5.0, camera_starting_position, camera_final_position, 5)
         },
     }
 

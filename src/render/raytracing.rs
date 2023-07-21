@@ -83,8 +83,9 @@ fn compute_direct_illumination(scene:&Scene, direction:&Vector3, hit_data:&HitDa
 	for light in &scene.lights{
 		//Compute distance and direction to light
 		let mut light_dir = light.get_position() - hit_data.point;
-		let squared_light_distance = light_dir.dot(&light_dir);
-		light_dir = light_dir.normalize();
+		let light_distance = light_dir.norm();
+		//normalize
+		light_dir = 1.0/light_distance * light_dir;
 
 		//Cos between norm and light
 		let cos = hit_data.norm.dot(&light_dir);
@@ -96,18 +97,18 @@ fn compute_direct_illumination(scene:&Scene, direction:&Vector3, hit_data:&HitDa
 
 		let intersection = intersection::raycast(scene, &ray);
 
-		fn compute_color(material:&Material, light_color:Vector3, light_dir: &Vector3, effective_norm:&Vector3, direction: &Vector3) -> Vector3{
-			return /*cos.abs() * light_color.mult(&material.attenuation()) + */light_color.mult(&material.specular(light_dir, effective_norm, direction));
+		fn compute_color(cos:f64, material:&Material, light_color:Vector3, light_dir: &Vector3, effective_norm:&Vector3, direction: &Vector3) -> Vector3{
+			return cos.abs() * light_color.mult(&material.attenuation()) + light_color.mult(&material.specular(light_dir, effective_norm, direction));
 		}
 
 		match intersection{
 			Hit::Nothing => {
 				//compute color probably needs -direction instead
-				color += compute_color(&hit_data.object.material, light.get_color(), &light_dir, &effective_norm, &direction);
+				color += compute_color(cos, &hit_data.object.material, light.get_color_attenuated(light_distance), &light_dir, &effective_norm, &direction);
 			},
 			Hit::Something(ref light_hit_data) => {
-				if light_hit_data.distance * light_hit_data.distance >= squared_light_distance{
-					color += compute_color(&hit_data.object.material, light.get_color(), &light_dir, &effective_norm, &direction);
+				if light_hit_data.distance >= light_distance{
+					color += compute_color(cos, &hit_data.object.material, light.get_color_attenuated(light_distance), &light_dir, &effective_norm, &direction);
 				}
 			},
 		}

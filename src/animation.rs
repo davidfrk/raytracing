@@ -87,13 +87,15 @@ pub fn render_metal_fuzz_animation(window:&Window, raytracing_config:RaytracingC
 }
 
 pub fn render_light_tunnel_animation(window:&Window, raytracing_config:RaytracingConfig, scene:&mut Scene, starting_frame:u32, frames:u32,
-		 oscilation_speed:f64, oscilation_size:f64, _cam_start:Vector3, _cam_end:Vector3, starting_obj_id:usize){
+		 oscilation_speed:f64, oscilation_size:f64, cam_start:Vector3, cam_end:Vector3, starting_obj_id:usize){
 	
 	let distance = oscilation_size + 5.0;// + oscilation_size / 2.0;
 
 	for i in starting_frame..frames{
 		let time = i as f64 / frames as f64;
-		let displacement = (time * PI * oscilation_speed).cos() * oscilation_size;
+
+		//Objects animation
+		let displacement = (20.0/60.0 * PI * oscilation_speed).cos() * oscilation_size;//change to time to animate positions
 
 		for obj_id in starting_obj_id..scene.objects.len(){
 			if obj_id % 2 == 0{
@@ -102,6 +104,10 @@ pub fn render_light_tunnel_animation(window:&Window, raytracing_config:Raytracin
 				scene.spheres[obj_id].position.z = - displacement - distance;
 			}
 		}
+
+		//Camera animation
+		let cam_pos = (1.0 - time) * cam_start + time * cam_end;
+		scene.lights[0].set_position(cam_pos);
 
 		//Render image
 		let img = render::render(scene, window.width, window.height, raytracing_config);

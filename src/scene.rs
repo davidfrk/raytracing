@@ -192,7 +192,7 @@ pub fn load_scene_2() -> Scene{
     load_materials(&mut scene);
 
     //Create lights
-    scene.lights.push(lights::PointLight::create(Vector3::new(0.0, 5.0, 0.0), Vector3::new(0.5, 0.5, 0.5)));
+    scene.lights.push(lights::PointLight::create(Vector3::new(0.0, 5.0, 0.0), Vector3::new(30.3, 10.3, 10.3)));
     //scene.lights.push(lights::PointLight::create(Vector3::new(0.0, 5.0, 0.0), Vector3::new(0.0, 1.0, 0.0)));
     //scene.lights.push(lights::PointLight::create(Vector3::new(0.0, 5.0, 4.0), Vector3::new(0.0, 0.0, 1.0)));
 
@@ -209,6 +209,7 @@ pub fn load_scene_2() -> Scene{
     scene.create_sphere(Vector3::new(0.0, 10010.0, 0.0), 10000.0, &String::from("diffuse_white"));
     scene.create_sphere(Vector3::new(0.0, 0.0, 10010.0), 10000.0, &String::from("diffuse_white"));
     scene.create_sphere(Vector3::new(0.0, 0.0, -10010.0), 10000.0, &String::from("diffuse_white"));
+    scene.create_sphere(Vector3::new(-10010.0, 0.0, 0.0), 10000.0, &String::from("diffuse_white"));
 
     //Emission
     //scene.create_sphere(Vector3::new(0.0, 5.0, 0.0), 4.0, &String::from("emission_white"));
